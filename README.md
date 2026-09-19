@@ -1,4 +1,4 @@
-﻿# Kintu Family Heritage Portal
+# Kintu Family Heritage Portal
 ## Bunyoro-Kitara Kingdom - Living Family Tree
 
 A digital heritage portal and interactive family tree for the Kintu family lineage, tracing roots in Bunyoro-Kitara Kingdom, Western Uganda.

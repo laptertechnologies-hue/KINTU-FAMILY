@@ -1,4 +1,4 @@
-﻿// api/members.js - Vercel Serverless Function
+// api/members.js - Vercel Serverless Function
 // Connects to Neon PostgreSQL via DATABASE_URL environment variable
 // GET  /api/members  - return all family members
 // POST /api/members  - insert or upsert a member

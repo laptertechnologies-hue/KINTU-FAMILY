@@ -1,4 +1,4 @@
-﻿// api/gallery.js - Vercel Serverless Function
+// api/gallery.js - Vercel Serverless Function
 // GET  /api/gallery - return all photos
 // POST /api/gallery - insert a photo entry
 

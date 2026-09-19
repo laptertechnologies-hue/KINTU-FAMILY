@@ -1,4 +1,4 @@
-﻿// KINTU FAMILY LINEAGE & HERITAGE PORTAL
+// KINTU FAMILY LINEAGE & HERITAGE PORTAL
 // Bunyoro-Kitara Cultural Lineage Data Store
 // Database: Neon (PostgreSQL) via /api/ serverless functions
 

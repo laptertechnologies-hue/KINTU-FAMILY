@@ -1,4 +1,4 @@
-﻿// api/rsvp.js - Vercel Serverless Function
+// api/rsvp.js - Vercel Serverless Function
 // POST /api/rsvp - insert an RSVP
 // GET  /api/rsvp - return total confirmed count
 
