@@ -571,12 +571,19 @@ function initModalsAndForms() {
       const bio = document.getElementById('regBio').value.trim() || 'Descendant of the Kintu family lineage.';
       const photo = document.getElementById('regPhotoUrl').value.trim() || '';
 
+      const selectedSpouseId = document.getElementById('regSpouse')?.value;
+
       // Compute Generation
       let generation = 1;
       if (appData.members.length > 0 && selectedParentId) {
         const parentMember = appData.members.find(m => m.id === selectedParentId);
         if (parentMember) {
           generation = Math.min((parentMember.generation || 1) + 1, 4);
+        }
+      } else if (appData.members.length > 0 && selectedSpouseId) {
+        const spouseMember = appData.members.find(m => m.id === selectedSpouseId);
+        if (spouseMember) {
+          generation = spouseMember.generation || 1;
         }
       } else if (appData.members.length > 0 && !selectedParentId) {
         generation = 1;
@@ -601,7 +608,7 @@ function initModalsAndForms() {
         bio,
         photo,
         parentIds: selectedParentId ? [selectedParentId] : [],
-        spouseIds: [],
+        spouseIds: selectedSpouseId ? [selectedSpouseId] : [],
         childrenIds: []
       };
 
@@ -612,6 +619,16 @@ function initModalsAndForms() {
         if (parentMember) {
           if (!parentMember.childrenIds) parentMember.childrenIds = [];
           parentMember.childrenIds.push(newId);
+        }
+      }
+
+      if (selectedSpouseId) {
+        const spouseMember = appData.members.find(m => m.id === selectedSpouseId);
+        if (spouseMember) {
+          if (!spouseMember.spouseIds) spouseMember.spouseIds = [];
+          if (!spouseMember.spouseIds.includes(newId)) {
+            spouseMember.spouseIds.push(newId);
+          }
         }
       }
 
@@ -660,21 +677,37 @@ function validateStep(step) {
 
 function populateParentDropdowns() {
   const parentSelect = document.getElementById('regParent');
+  const spouseSelect = document.getElementById('regSpouse');
   const parentNotice = document.getElementById('regParentNotice');
   if (!parentSelect) return;
 
   if (appData.members.length === 0) {
     parentSelect.innerHTML = `<option value="">First Root Member / Founding Ancestor (Generation 1)</option>`;
     parentSelect.disabled = true;
+    if (spouseSelect) {
+      spouseSelect.innerHTML = `<option value="">None (First Member)</option>`;
+      spouseSelect.disabled = true;
+    }
     if (parentNotice) parentNotice.textContent = "You are planting the first member of the family tree! This person will be Generation 1.";
   } else {
     parentSelect.disabled = false;
-    parentSelect.innerHTML = `<option value="">-- Select Parent or Leave Blank for Root (Gen 1) --</option>`;
+    parentSelect.innerHTML = `<option value="">-- None (Root Member or Generation 1) --</option>`;
+    if (spouseSelect) {
+      spouseSelect.disabled = false;
+      spouseSelect.innerHTML = `<option value="">-- None / Unmarried --</option>`;
+    }
     appData.members.forEach(m => {
       const opt = document.createElement('option');
       opt.value = m.id;
       opt.textContent = `${m.firstName} ${m.lastName} (Gen ${m.generation} • ${m.branch || 'Lineage'})`;
       parentSelect.appendChild(opt);
+
+      if (spouseSelect) {
+        const optSpouse = document.createElement('option');
+        optSpouse.value = m.id;
+        optSpouse.textContent = `${m.firstName} ${m.lastName} (Gen ${m.generation} • ${m.branch || 'Lineage'})`;
+        spouseSelect.appendChild(optSpouse);
+      }
     });
     if (parentNotice) parentNotice.textContent = "Select this member's father or mother already listed in the tree. Generation level will be set automatically.";
   }

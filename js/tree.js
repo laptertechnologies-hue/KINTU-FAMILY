@@ -245,8 +245,8 @@ class FamilyTreeEngine {
     const ySpacing = 220;
     const baseCenterX = 1500;
 
-    // Arrange Generation 1
-    const g1 = genGroups[1];
+    // Order each generation so spouses sit adjacent
+    const g1 = this.orderGenerationWithSpouses(genGroups[1]);
     if (g1.length > 0) {
       const spacing = this.options.nodeWidth + 60;
       const totalWidth = g1.length * spacing;
@@ -258,7 +258,7 @@ class FamilyTreeEngine {
     }
 
     // Arrange Generation 2
-    const g2 = genGroups[2];
+    const g2 = this.orderGenerationWithSpouses(genGroups[2]);
     const g2StartY = startY + ySpacing;
     if (g2.length > 0) {
       const spacing = this.options.nodeWidth + 48;
@@ -271,7 +271,7 @@ class FamilyTreeEngine {
     }
 
     // Arrange Generation 3
-    const g3 = genGroups[3];
+    const g3 = this.orderGenerationWithSpouses(genGroups[3]);
     const g3StartY = g2StartY + ySpacing;
     if (g3.length > 0) {
       const spacing = this.options.nodeWidth + 36;
@@ -284,7 +284,7 @@ class FamilyTreeEngine {
     }
 
     // Arrange Generation 4
-    const g4 = genGroups[4];
+    const g4 = this.orderGenerationWithSpouses(genGroups[4]);
     const g4StartY = g3StartY + ySpacing;
     if (g4.length > 0) {
       const spacing = this.options.nodeWidth + 36;
@@ -295,6 +295,29 @@ class FamilyTreeEngine {
         curX += spacing;
       });
     }
+  }
+
+  orderGenerationWithSpouses(list) {
+    const ordered = [];
+    const visited = new Set();
+    list.forEach(member => {
+      if (visited.has(member.id)) return;
+      visited.add(member.id);
+      ordered.push(member);
+
+      if (member.spouseIds && member.spouseIds.length > 0) {
+        member.spouseIds.forEach(spId => {
+          if (!visited.has(spId)) {
+            const spouse = list.find(s => s.id === spId);
+            if (spouse) {
+              visited.add(spId);
+              ordered.push(spouse);
+            }
+          }
+        });
+      }
+    });
+    return ordered;
   }
 
   render() {
