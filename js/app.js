@@ -1,7 +1,7 @@
 /**
  * KINTU FAMILY WEBSITE - MAIN CONTROLLER
- * Coordinates tree visualization, self-registration wizard, profile modals,
- * directory searches, photo gallery lightbox, and diaspora analytics.
+ * Bunyoro-Kitara Cultural Lineage & Living Archive
+ * Clean vector UI, zero emojis, dynamic member additions, and photo uploads.
  */
 
 let appData = null;
@@ -9,10 +9,8 @@ let treeEngine = null;
 let selectedMember = null;
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Load data from localStorage or initial seed
   appData = getFamilyData();
 
-  // Initialize UI components
   initTree();
   initHistoryTimeline();
   initMemorialWall();
@@ -23,7 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initModalsAndForms();
   initThemeAndScroll();
 
-  console.log("Kintu Family Heritage Portal initialized with", appData.members.length, "members.");
+  console.log("Kintu Family Heritage Portal initialized for Bunyoro-Kitara.");
 });
 
 /* -------------------------------------------------------------
@@ -43,14 +41,15 @@ function initTree() {
   if (searchInput && searchResults) {
     searchInput.addEventListener('input', (e) => {
       const q = e.target.value.trim().toLowerCase();
-      if (!q) {
+      if (!q || appData.members.length === 0) {
         searchResults.classList.add('hidden');
         return;
       }
 
       const matches = appData.members.filter(m => 
-        m.firstName.toLowerCase().includes(q) ||
-        m.lastName.toLowerCase().includes(q) ||
+        (m.firstName && m.firstName.toLowerCase().includes(q)) ||
+        (m.lastName && m.lastName.toLowerCase().includes(q)) ||
+        (m.empaako && m.empaako.toLowerCase().includes(q)) ||
         (m.traditionalName && m.traditionalName.toLowerCase().includes(q)) ||
         (m.occupation && m.occupation.toLowerCase().includes(q))
       ).slice(0, 6);
@@ -61,13 +60,15 @@ function initTree() {
         searchResults.innerHTML = matches.map(m => `
           <div class="p-2.5 hover:bg-slate-800/80 cursor-pointer flex items-center justify-between border-b border-slate-700/40 last:border-0" data-member-id="${m.id}">
             <div class="flex items-center gap-2">
-              <img src="${m.photo}" class="w-7 h-7 rounded-md object-cover">
+              <div class="w-7 h-7 rounded-md bg-slate-800 flex items-center justify-center text-slate-300 text-xs font-bold">
+                ${m.photo ? `<img src="${m.photo}" class="w-7 h-7 rounded-md object-cover">` : m.firstName[0]}
+              </div>
               <div>
                 <div class="text-xs font-semibold text-white">${m.firstName} ${m.lastName}</div>
-                <div class="text-[10px] text-amber-400">${m.branch} • Gen ${m.generation}</div>
+                <div class="text-[10px] text-amber-400">${m.branch || 'Lineage'} • Gen ${m.generation}</div>
               </div>
             </div>
-            <span class="text-[10px] text-slate-400">Jump ➔</span>
+            <span class="text-[10px] text-slate-400">Jump &rarr;</span>
           </div>
         `).join('');
 
@@ -109,21 +110,25 @@ function initTree() {
   // Branch filter dropdown
   const branchSelect = document.getElementById('branchSelectFilter');
   if (branchSelect) {
-    // Populate branches dynamically
-    const branches = Array.from(new Set(appData.members.map(m => m.branch).filter(Boolean)));
-    branches.forEach(b => {
-      const opt = document.createElement('option');
-      opt.value = b;
-      opt.textContent = b;
-      branchSelect.appendChild(opt);
-    });
-
+    updateBranchDropdown(branchSelect);
     branchSelect.addEventListener('change', () => {
       const activeGenBtn = document.querySelector('.filter-gen-btn.bg-amber-500');
       const gen = activeGenBtn ? activeGenBtn.getAttribute('data-gen') : 'all';
       treeEngine.setFilters(gen, branchSelect.value);
     });
   }
+}
+
+function updateBranchDropdown(selectEl) {
+  if (!selectEl) return;
+  const branches = Array.from(new Set(appData.members.map(m => m.branch).filter(Boolean)));
+  selectEl.innerHTML = '<option value="all">All Lineage Branches</option>';
+  branches.forEach(b => {
+    const opt = document.createElement('option');
+    opt.value = b;
+    opt.textContent = b;
+    selectEl.appendChild(opt);
+  });
 }
 
 /* -------------------------------------------------------------
@@ -134,18 +139,15 @@ function initHistoryTimeline() {
   if (!container) return;
 
   container.innerHTML = appData.timeline.map((item, idx) => {
-    const isEven = idx % 2 === 0;
     return `
       <div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group mb-8">
-        <!-- Dot -->
         <div class="flex items-center justify-center w-10 h-10 rounded-full border-2 border-amber-500 bg-slate-900 group-hover:scale-110 group-hover:bg-amber-500 group-hover:text-slate-950 transition-all duration-300 z-10 shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow-[0_0_15px_rgba(217,119,6,0.3)]">
           <span class="text-xs font-bold">${item.year.slice(-2)}</span>
         </div>
-        <!-- Content Card -->
         <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-5 rounded-2xl glass-panel border border-slate-700/60 shadow-xl group-hover:border-amber-500/40 transition">
           <div class="flex items-center justify-between mb-2">
             <span class="text-xs font-bold px-2.5 py-1 rounded-full badge-gold">${item.year}</span>
-            <span class="text-[11px] text-amber-400/80 font-medium">${item.category}</span>
+            <span class="text-[11px] text-amber-400 font-medium">${item.category}</span>
           </div>
           <h4 class="text-base font-semibold text-white mb-1.5">${item.title}</h4>
           <p class="text-xs text-slate-300 leading-relaxed">${item.description}</p>
@@ -156,35 +158,55 @@ function initHistoryTimeline() {
 }
 
 /* -------------------------------------------------------------
- * 3. MEMORIAL WALL ("ABAATUSOOKA")
+ * 3. MEMORIAL WALL ("OKWIJUKA ABAATWESIZE")
  * ------------------------------------------------------------- */
 function initMemorialWall() {
   const container = document.getElementById('memorialGrid');
   if (!container) return;
 
-  container.innerHTML = appData.memorialTributes.map(tribute => `
+  const deceased = appData.members.filter(m => m.isDeceased);
+
+  if (deceased.length === 0) {
+    container.innerHTML = `
+      <div class="col-span-full text-center py-12 px-4 glass-panel rounded-2xl border border-slate-800">
+        <div class="w-12 h-12 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-400 mx-auto mb-3">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+        <h4 class="text-base font-bold text-white mb-1">In Memory of Departed Elders & Forebears</h4>
+        <p class="text-xs text-slate-400 max-w-md mx-auto mb-4 leading-relaxed">
+          Departed ancestors and family members will appear here automatically when added to the family tree with memorial dates.
+        </p>
+        <button onclick="document.getElementById('btnOpenAddMember').click()" class="text-xs text-amber-400 hover:text-amber-300 underline font-semibold">
+          Add an Ancestor or Loved One to the Tree &rarr;
+        </button>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = deceased.map(member => `
     <div class="glass-panel rounded-2xl overflow-hidden border border-slate-700/60 p-6 flex flex-col justify-between hover:border-amber-500/40 transition group">
       <div>
         <div class="flex items-center gap-4 mb-4">
           <div class="relative shrink-0">
-            <img src="${tribute.image}" class="w-16 h-16 rounded-full object-cover border-2 border-amber-500/60 grayscale group-hover:grayscale-0 transition duration-500">
-            <span class="absolute -bottom-1 -right-1 text-xs">🕊️</span>
+            ${member.photo 
+              ? `<img src="${member.photo}" class="w-16 h-16 rounded-full object-cover border-2 border-amber-500/60 grayscale group-hover:grayscale-0 transition duration-500">`
+              : `<div class="w-16 h-16 rounded-full bg-slate-800 border-2 border-slate-700 flex items-center justify-center text-slate-400 font-bold text-lg">${member.firstName[0]}</div>`
+            }
           </div>
           <div>
-            <h4 class="text-base font-bold text-white">${tribute.name}</h4>
-            <p class="text-xs text-amber-400 font-medium">${tribute.years}</p>
-            <p class="text-xs text-slate-400">${tribute.role}</p>
+            <h4 class="text-base font-bold text-white">${member.firstName} ${member.lastName}</h4>
+            <p class="text-xs text-amber-400 font-medium">${member.birthYear || ''} &ndash; ${member.deathYear || 'Passed'}</p>
+            ${member.empaako ? `<p class="text-[11px] text-slate-300 font-medium">Empaako: ${member.empaako}</p>` : ''}
+            <p class="text-xs text-slate-400">${member.occupation || 'Elder'}</p>
           </div>
         </div>
-        <blockquote class="italic text-xs text-slate-300 border-l-2 border-amber-500/40 pl-3 my-3">
-          "${tribute.quote}"
-        </blockquote>
-        <p class="text-xs text-slate-400 leading-relaxed">${tribute.legacy}</p>
+        <p class="text-xs text-slate-300 leading-relaxed">${member.bio || 'Remembered with deep love and reverence by the Kintu family.'}</p>
       </div>
       <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
-        <span>Candle Lit in Memory 🕯️</span>
-        <button class="text-amber-400 hover:text-amber-300 font-medium" onclick="alert('Thank you for lighting a candle in honor of ${tribute.name}. Their legacy shines on!')">
-          Light Candle
+        <span>In Perpetual Memory</span>
+        <button class="text-amber-400 hover:text-amber-300 font-medium" onclick="alert('Thank you for honoring the memory of ${member.firstName} ${member.lastName}. Their legacy endures.')">
+          Honor Memory
         </button>
       </div>
     </div>
@@ -192,7 +214,7 @@ function initMemorialWall() {
 }
 
 /* -------------------------------------------------------------
- * 4. LIVING ARCHIVES & GALLERY
+ * 4. LIVING ARCHIVES & PHOTO GALLERY
  * ------------------------------------------------------------- */
 function initGallery() {
   const grid = document.getElementById('galleryGrid');
@@ -200,7 +222,6 @@ function initGallery() {
 
   renderGalleryItems('all');
 
-  // Filter Buttons
   document.querySelectorAll('.gallery-filter-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.gallery-filter-btn').forEach(b => {
@@ -214,10 +235,63 @@ function initGallery() {
       renderGalleryItems(cat);
     });
   });
+
+  // Photo Contribution Form
+  const photoForm = document.getElementById('addPhotoForm');
+  if (photoForm) {
+    photoForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const title = document.getElementById('photoTitle').value.trim();
+      const image = document.getElementById('photoUrl').value.trim();
+      const year = document.getElementById('photoYear').value.trim() || new Date().getFullYear().toString();
+      const category = document.getElementById('photoCategory').value;
+      const caption = document.getElementById('photoCaption').value.trim();
+
+      if (!title || !image) {
+        alert("Please provide an image title and a valid image URL.");
+        return;
+      }
+
+      appData.gallery.push({
+        id: `img-${Date.now()}`,
+        title,
+        category,
+        year,
+        image,
+        caption
+      });
+
+      saveFamilyData(appData);
+      renderGalleryItems('all');
+      document.getElementById('addPhotoModal').classList.add('hidden');
+      photoForm.reset();
+      alert("Photo memory successfully added to the family archive!");
+    });
+  }
 }
 
 function renderGalleryItems(category) {
   const grid = document.getElementById('galleryGrid');
+  if (!grid) return;
+
+  if (appData.gallery.length === 0) {
+    grid.innerHTML = `
+      <div class="col-span-full text-center py-16 px-4 glass-panel rounded-2xl border border-slate-800">
+        <div class="w-14 h-14 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-400 mx-auto mb-3">
+          <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+        </div>
+        <h4 class="text-base font-bold text-white mb-1">Archival Gallery is Ready for Photos</h4>
+        <p class="text-xs text-slate-400 max-w-md mx-auto mb-6 leading-relaxed">
+          No photos have been uploaded yet. Family members can upload ancestral portraits, celebrations, and historical landmarks.
+        </p>
+        <button onclick="document.getElementById('addPhotoModal').classList.remove('hidden')" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg transition">
+          Contribute First Photo
+        </button>
+      </div>
+    `;
+    return;
+  }
+
   const items = category === 'all' 
     ? appData.gallery 
     : appData.gallery.filter(g => g.category.toLowerCase() === category.toLowerCase());
@@ -231,7 +305,7 @@ function renderGalleryItems(category) {
           <span class="text-[11px] text-amber-300 font-semibold">${img.year}</span>
         </div>
         <h5 class="text-sm font-bold text-white truncate">${img.title}</h5>
-        <p class="text-xs text-slate-300 line-clamp-1">${img.caption}</p>
+        <p class="text-xs text-slate-300 line-clamp-1">${img.caption || ''}</p>
       </div>
     </div>
   `).join('');
@@ -246,8 +320,8 @@ function openLightbox(src, title, caption, year) {
 
   img.src = src;
   tit.textContent = title;
-  cap.textContent = caption;
-  yr.textContent = year;
+  cap.textContent = caption || '';
+  yr.textContent = year || '';
 
   modal.classList.remove('hidden');
 }
@@ -261,20 +335,40 @@ function initDiasporaStats() {
 
   const totalMembers = appData.members.length;
 
-  container.innerHTML = appData.diasporaStats.map(stat => {
-    const percentage = Math.round((stat.count / totalMembers) * 100);
+  if (totalMembers === 0) {
+    container.innerHTML = `
+      <div class="p-6 rounded-2xl glass-panel border border-slate-800 text-center">
+        <p class="text-xs text-slate-400">Diaspora statistics will populate automatically as family members register their cities and countries.</p>
+      </div>
+    `;
+    return;
+  }
+
+  // Calculate live counts per country
+  const counts = {};
+  appData.members.forEach(m => {
+    const c = m.country ? m.country.trim() : 'Uganda';
+    counts[c] = (counts[c] || 0) + 1;
+  });
+
+  const countries = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
+
+  container.innerHTML = countries.map(countryName => {
+    const count = counts[countryName];
+    const percentage = Math.round((count / totalMembers) * 100);
     return `
       <div class="p-4 rounded-xl glass-panel border border-slate-700/60 hover:border-amber-500/40 transition">
         <div class="flex items-center justify-between mb-2">
           <div class="flex items-center gap-2">
-            <span class="text-2xl">${stat.flag}</span>
+            <div class="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-slate-300 text-xs font-bold border border-slate-700">
+              ${countryName.slice(0, 2).toUpperCase()}
+            </div>
             <div>
-              <span class="text-sm font-bold text-white">${stat.country}</span>
-              <p class="text-[11px] text-slate-400">${stat.cities}</p>
+              <span class="text-sm font-bold text-white">${countryName}</span>
             </div>
           </div>
           <div class="text-right">
-            <span class="text-base font-extrabold text-amber-400">${stat.count}</span>
+            <span class="text-base font-extrabold text-amber-400">${count}</span>
             <span class="text-[10px] text-slate-400 block">${percentage}% of family</span>
           </div>
         </div>
@@ -296,26 +390,41 @@ function initDirectory() {
 
   function render(list) {
     if (!grid) return;
-    document.getElementById('directoryTotalCount').textContent = `${list.length} Relatives`;
+    document.getElementById('directoryTotalCount').textContent = `${list.length} Relatives Recorded`;
+
+    if (list.length === 0) {
+      grid.innerHTML = `
+        <div class="col-span-full p-8 rounded-2xl glass-panel border border-slate-800 text-center">
+          <p class="text-xs text-slate-400 mb-3">No relatives matching your criteria in the directory.</p>
+          <button onclick="document.getElementById('btnOpenAddMember').click()" class="text-xs text-amber-400 font-semibold underline">
+            Add a Member to the Directory &rarr;
+          </button>
+        </div>
+      `;
+      return;
+    }
 
     grid.innerHTML = list.map(m => `
       <div class="p-4 rounded-2xl glass-panel border border-slate-700/60 hover:border-amber-500/40 transition flex flex-col justify-between">
         <div>
           <div class="flex items-start gap-3 mb-3">
-            <img src="${m.photo}" class="w-14 h-14 rounded-xl object-cover border border-slate-600">
+            ${m.photo 
+              ? `<img src="${m.photo}" class="w-14 h-14 rounded-xl object-cover border border-slate-600">`
+              : `<div class="w-14 h-14 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 font-bold text-lg">${m.firstName[0]}</div>`
+            }
             <div class="min-w-0 flex-1">
               <h4 class="text-sm font-bold text-white truncate">${m.firstName} ${m.lastName}</h4>
-              ${m.traditionalName ? `<p class="text-xs text-amber-400 font-medium">"${m.traditionalName}"</p>` : ''}
-              <p class="text-xs text-slate-300 font-medium truncate mt-0.5">${m.occupation || 'Relative'}</p>
-              <p class="text-[11px] text-slate-400 truncate">📍 ${m.location}</p>
+              ${(m.empaako || m.traditionalName) ? `<p class="text-xs text-amber-400 font-medium">"${m.empaako || m.traditionalName}"</p>` : ''}
+              <p class="text-xs text-slate-300 font-medium truncate mt-0.5">${m.occupation || 'Family Member'}</p>
+              <p class="text-[11px] text-slate-400 truncate">${m.location || 'Location Not Specified'}</p>
             </div>
           </div>
-          <p class="text-xs text-slate-400 line-clamp-2 leading-relaxed mb-3">${m.bio || ''}</p>
+          <p class="text-xs text-slate-400 line-clamp-2 leading-relaxed mb-3">${m.bio || 'Proud member of the Kintu family.'}</p>
         </div>
         <div class="pt-3 border-t border-slate-700/40 flex items-center justify-between">
-          <span class="text-[10px] px-2 py-0.5 rounded-full badge-gold font-semibold">Gen ${m.generation} • ${m.branch}</span>
+          <span class="text-[10px] px-2 py-0.5 rounded-full badge-gold font-semibold">Gen ${m.generation} • ${m.branch || 'Lineage'}</span>
           <button class="text-xs text-amber-400 hover:text-amber-300 font-semibold" onclick="viewMemberDetail('${m.id}')">
-            View Profile ➔
+            View Profile &rarr;
           </button>
         </div>
       </div>
@@ -327,7 +436,7 @@ function initDirectory() {
     const role = (roleSelect?.value || 'all').toLowerCase();
 
     const filtered = appData.members.filter(m => {
-      const matchText = (m.firstName + ' ' + m.lastName + ' ' + (m.traditionalName || '') + ' ' + m.location + ' ' + m.occupation).toLowerCase().includes(q);
+      const matchText = (m.firstName + ' ' + m.lastName + ' ' + (m.empaako || '') + ' ' + (m.traditionalName || '') + ' ' + (m.location || '') + ' ' + (m.occupation || '')).toLowerCase().includes(q);
       const matchRole = (role === 'all') || (m.occupation && m.occupation.toLowerCase().includes(role));
       return matchText && matchRole;
     });
@@ -345,38 +454,36 @@ function viewMemberDetail(id) {
   const member = appData.members.find(m => m.id === id);
   if (member) {
     openMemberModal(member);
-    // Also scroll smoothly to the tree section so user can see context
     document.getElementById('treeSection')?.scrollIntoView({ behavior: 'smooth' });
     treeEngine.focusOnMember(id);
   }
 }
 
 /* -------------------------------------------------------------
- * 7. REUNION COUNTDOWN & RSVP
+ * 7. REUNION RSVP
  * ------------------------------------------------------------- */
 function initReunion() {
   const rsvpForm = document.getElementById('reunionRsvpForm');
   if (rsvpForm) {
     rsvpForm.addEventListener('submit', (e) => {
       e.preventDefault();
-      const name = document.getElementById('rsvpName').value;
+      const name = document.getElementById('rsvpName').value.trim();
       const count = parseInt(document.getElementById('rsvpCount').value) || 1;
 
       appData.upcomingReunion.confirmedRsvp += count;
       saveFamilyData(appData);
 
       document.getElementById('rsvpConfirmedNumber').textContent = appData.upcomingReunion.confirmedRsvp;
-      alert(`Mwebale nnyo, ${name}! Your RSVP for ${count} guest(s) has been recorded for the Grand Kintu Reunion 2026!`);
+      alert(`Thank you, ${name}! Your RSVP for ${count} guest(s) has been recorded for the Kintu Family Gathering.`);
       rsvpForm.reset();
     });
   }
 }
 
 /* -------------------------------------------------------------
- * 8. MODALS & FORMS ("ADD YOURSELF" & "MEMBER PROFILE")
+ * 8. MODALS & FORMS ("ADD YOURSELF")
  * ------------------------------------------------------------- */
 function initModalsAndForms() {
-  // Add Member Modal toggle
   const openAddBtn = document.getElementById('btnOpenAddMember');
   const openAddHeroBtn = document.getElementById('btnHeroAddMember');
   const addModal = document.getElementById('addMemberModal');
@@ -391,16 +498,16 @@ function initModalsAndForms() {
   if (openAddHeroBtn) openAddHeroBtn.addEventListener('click', openAdd);
   if (closeAddBtn) closeAddBtn.addEventListener('click', () => addModal.classList.add('hidden'));
 
-  // Close modals on overlay click
   window.addEventListener('click', (e) => {
     if (e.target === addModal) addModal.classList.add('hidden');
     const memberModal = document.getElementById('memberProfileModal');
     if (e.target === memberModal) memberModal.classList.add('hidden');
     const lightboxModal = document.getElementById('lightboxModal');
     if (e.target === lightboxModal) lightboxModal.classList.add('hidden');
+    const photoModal = document.getElementById('addPhotoModal');
+    if (e.target === photoModal) photoModal.classList.add('hidden');
   });
 
-  // Wizard Step navigation inside Add Member Modal
   let currentStep = 1;
   const updateWizardStep = (step) => {
     currentStep = step;
@@ -445,40 +552,34 @@ function initModalsAndForms() {
 
       const pinInput = document.getElementById('regPin').value.trim();
       if (pinInput.toUpperCase() !== appData.familyInfo.familyPin) {
-        alert(`Incorrect Family PIN. Please enter "${appData.familyInfo.familyPin}" (or ask your branch elder).`);
+        alert(`Incorrect Family Passcode. Please enter "${appData.familyInfo.familyPin}".`);
         return;
       }
 
       const firstName = document.getElementById('regFirstName').value.trim();
       const lastName = document.getElementById('regLastName').value.trim();
-      const traditionalName = document.getElementById('regTraditionalName').value.trim();
+      const empaako = document.getElementById('regEmpaako').value.trim();
       const gender = document.getElementById('regGender').value;
       const birthYear = parseInt(document.getElementById('regBirthYear').value) || 2000;
+      const isDeceased = document.getElementById('regIsDeceased').checked;
+      const deathYear = isDeceased ? (parseInt(document.getElementById('regDeathYear').value) || null) : null;
       const selectedParentId = document.getElementById('regParent').value;
-      const branch = document.getElementById('regBranch').value || 'Main Lineage';
+      const branch = document.getElementById('regBranch').value.trim() || 'Main Lineage';
       const occupation = document.getElementById('regOccupation').value.trim() || 'Family Member';
-      const city = document.getElementById('regCity').value.trim() || 'Kampala';
+      const city = document.getElementById('regCity').value.trim() || 'Bunyoro';
       const country = document.getElementById('regCountry').value.trim() || 'Uganda';
-      const bio = document.getElementById('regBio').value.trim() || 'Proud member of the Kintu family lineage.';
+      const bio = document.getElementById('regBio').value.trim() || 'Descendant of the Kintu family lineage.';
+      const photo = document.getElementById('regPhotoUrl').value.trim() || '';
 
-      // Determine photo: custom URL, avatar preset, or fallback
-      let photo = document.getElementById('regPhotoUrl').value.trim();
-      if (!photo) {
-        const defaultAvatars = {
-          male: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80',
-          female: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&auto=format&fit=crop&q=80',
-          other: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80'
-        };
-        photo = defaultAvatars[gender] || defaultAvatars.other;
-      }
-
-      // Compute Generation based on parent
-      let generation = 4;
-      if (selectedParentId) {
+      // Compute Generation
+      let generation = 1;
+      if (appData.members.length > 0 && selectedParentId) {
         const parentMember = appData.members.find(m => m.id === selectedParentId);
         if (parentMember) {
-          generation = Math.min((parentMember.generation || 3) + 1, 4);
+          generation = Math.min((parentMember.generation || 1) + 1, 4);
         }
+      } else if (appData.members.length > 0 && !selectedParentId) {
+        generation = 1;
       }
 
       const newId = `member-${Date.now()}`;
@@ -486,12 +587,13 @@ function initModalsAndForms() {
         id: newId,
         firstName,
         lastName,
-        traditionalName,
+        empaako,
+        traditionalName: empaako,
         gender,
         generation,
         birthYear,
-        deathYear: null,
-        isDeceased: false,
+        deathYear,
+        isDeceased,
         branch,
         location: `${city}, ${country}`,
         country,
@@ -503,10 +605,8 @@ function initModalsAndForms() {
         childrenIds: []
       };
 
-      // Add to members list
       appData.members.push(newMember);
 
-      // If parent selected, link child to parent's children list
       if (selectedParentId) {
         const parentMember = appData.members.find(m => m.id === selectedParentId);
         if (parentMember) {
@@ -515,16 +615,8 @@ function initModalsAndForms() {
         }
       }
 
-      // Update diaspora stats if applicable
-      const existingCountry = appData.diasporaStats.find(s => s.country.toLowerCase() === country.toLowerCase());
-      if (existingCountry) {
-        existingCountry.count += 1;
-      }
-
-      // Persist to localStorage
       saveFamilyData(appData);
 
-      // Close modal and reset form
       addModal.classList.add('hidden');
       addMemberForm.reset();
       updateWizardStep(1);
@@ -533,16 +625,23 @@ function initModalsAndForms() {
       treeEngine.setData(appData);
       initDirectory();
       initDiasporaStats();
+      initMemorialWall();
+      updateHeroCount();
 
-      // Launch celebratory confetti burst!
       fireCelebrationConfetti();
-
-      // Focus tree on new member and notify!
       treeEngine.focusOnMember(newId);
+
       setTimeout(() => {
-        alert(`🎉 Kulika! Congratulations, ${firstName}! You have successfully added yourself to the Kintu Living Family Tree.`);
-      }, 400);
+        alert(`Congratulations, ${firstName}! You have been successfully added to the Kintu Family Tree.`);
+      }, 350);
     });
+  }
+}
+
+function updateHeroCount() {
+  const heroEl = document.getElementById('heroMemberCount');
+  if (heroEl) {
+    heroEl.textContent = appData.members.length.toString();
   }
 }
 
@@ -561,15 +660,24 @@ function validateStep(step) {
 
 function populateParentDropdowns() {
   const parentSelect = document.getElementById('regParent');
+  const parentNotice = document.getElementById('regParentNotice');
   if (!parentSelect) return;
 
-  parentSelect.innerHTML = `<option value="">-- Select Father or Mother (or choose Branch) --</option>`;
-  appData.members.forEach(m => {
-    const opt = document.createElement('option');
-    opt.value = m.id;
-    opt.textContent = `${m.firstName} ${m.lastName} (Gen ${m.generation} • ${m.branch})`;
-    parentSelect.appendChild(opt);
-  });
+  if (appData.members.length === 0) {
+    parentSelect.innerHTML = `<option value="">First Root Member / Founding Ancestor (Generation 1)</option>`;
+    parentSelect.disabled = true;
+    if (parentNotice) parentNotice.textContent = "You are planting the first member of the family tree! This person will be Generation 1.";
+  } else {
+    parentSelect.disabled = false;
+    parentSelect.innerHTML = `<option value="">-- Select Parent or Leave Blank for Root (Gen 1) --</option>`;
+    appData.members.forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m.id;
+      opt.textContent = `${m.firstName} ${m.lastName} (Gen ${m.generation} • ${m.branch || 'Lineage'})`;
+      parentSelect.appendChild(opt);
+    });
+    if (parentNotice) parentNotice.textContent = "Select this member's father or mother already listed in the tree. Generation level will be set automatically.";
+  }
 }
 
 /* -------------------------------------------------------------
@@ -580,24 +688,44 @@ function openMemberModal(member) {
   const modal = document.getElementById('memberProfileModal');
   if (!modal) return;
 
-  document.getElementById('modalMemberPhoto').src = member.photo;
+  const photoEl = document.getElementById('modalMemberPhoto');
+  const fallbackEl = document.getElementById('modalMemberPhotoFallback');
+  if (member.photo) {
+    photoEl.src = member.photo;
+    photoEl.classList.remove('hidden');
+    if (fallbackEl) fallbackEl.classList.add('hidden');
+  } else {
+    photoEl.classList.add('hidden');
+    if (fallbackEl) {
+      fallbackEl.classList.remove('hidden');
+      fallbackEl.textContent = member.firstName[0];
+    }
+  }
+
   document.getElementById('modalMemberName').textContent = `${member.firstName} ${member.lastName}`;
-  document.getElementById('modalMemberTradName').textContent = member.traditionalName ? `Cultural Name: "${member.traditionalName}"` : '';
+  
+  const empaakoEl = document.getElementById('modalMemberTradName');
+  if (member.empaako || member.traditionalName) {
+    empaakoEl.textContent = `Empaako: "${member.empaako || member.traditionalName}"`;
+    empaakoEl.classList.remove('hidden');
+  } else {
+    empaakoEl.classList.add('hidden');
+  }
+
   document.getElementById('modalMemberOccupation').textContent = member.occupation || 'Family Member';
-  document.getElementById('modalMemberLocation').textContent = `📍 ${member.location}`;
-  document.getElementById('modalMemberGenBadge').textContent = `Generation ${member.generation} • ${member.branch}`;
+  document.getElementById('modalMemberLocation').textContent = member.location || 'Location Not Specified';
+  document.getElementById('modalMemberGenBadge').textContent = `Generation ${member.generation} • ${member.branch || 'Lineage'}`;
   document.getElementById('modalMemberBio').textContent = member.bio || 'No biography provided yet.';
 
   const datesStr = member.isDeceased 
-    ? `🕊️ Born ${member.birthYear} — Entered Rest ${member.deathYear}` 
-    : `🌟 Born ${member.birthYear} (Age ~${new Date().getFullYear() - member.birthYear})`;
-  document.getElementById('modalMemberDates').textContent = datesStr;
+    ? `Born ${member.birthYear || 'Unknown'} &ndash; Passed ${member.deathYear || 'Unknown'}` 
+    : `Born ${member.birthYear || 'Unknown'}`;
+  document.getElementById('modalMemberDates').innerHTML = datesStr;
 
-  // Build Lineage links (Parents, Spouse, Children)
+  // Build Relations
   const relationsContainer = document.getElementById('modalMemberRelations');
   let relHtml = '';
 
-  // Parents
   if (member.parentIds && member.parentIds.length > 0) {
     const parents = member.parentIds.map(id => appData.members.find(m => m.id === id)).filter(Boolean);
     if (parents.length > 0) {
@@ -606,8 +734,7 @@ function openMemberModal(member) {
           <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">Parents</span>
           <div class="flex flex-wrap gap-2">
             ${parents.map(p => `
-              <button class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-amber-500 hover:text-slate-950 text-xs text-white border border-slate-700 transition flex items-center gap-1.5" onclick="viewMemberDetail('${p.id}')">
-                <img src="${p.photo}" class="w-4 h-4 rounded-full object-cover">
+              <button class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-amber-500 hover:text-slate-950 text-xs text-white border border-slate-700 transition" onclick="viewMemberDetail('${p.id}')">
                 ${p.firstName} ${p.lastName}
               </button>
             `).join('')}
@@ -617,17 +744,15 @@ function openMemberModal(member) {
     }
   }
 
-  // Spouses
   if (member.spouseIds && member.spouseIds.length > 0) {
     const spouses = member.spouseIds.map(id => appData.members.find(m => m.id === id)).filter(Boolean);
     if (spouses.length > 0) {
       relHtml += `
         <div class="mb-3">
-          <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">Spouse / Partner</span>
+          <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">Spouse</span>
           <div class="flex flex-wrap gap-2">
             ${spouses.map(s => `
-              <button class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-amber-500 hover:text-slate-950 text-xs text-white border border-slate-700 transition flex items-center gap-1.5" onclick="viewMemberDetail('${s.id}')">
-                <img src="${s.photo}" class="w-4 h-4 rounded-full object-cover">
+              <button class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-amber-500 hover:text-slate-950 text-xs text-white border border-slate-700 transition" onclick="viewMemberDetail('${s.id}')">
                 ${s.firstName} ${s.lastName}
               </button>
             `).join('')}
@@ -637,7 +762,6 @@ function openMemberModal(member) {
     }
   }
 
-  // Children
   if (member.childrenIds && member.childrenIds.length > 0) {
     const children = member.childrenIds.map(id => appData.members.find(m => m.id === id)).filter(Boolean);
     if (children.length > 0) {
@@ -646,8 +770,7 @@ function openMemberModal(member) {
           <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">Children (${children.length})</span>
           <div class="flex flex-wrap gap-2">
             ${children.map(c => `
-              <button class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-amber-500 hover:text-slate-950 text-xs text-white border border-slate-700 transition flex items-center gap-1.5" onclick="viewMemberDetail('${c.id}')">
-                <img src="${c.photo}" class="w-4 h-4 rounded-full object-cover">
+              <button class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-amber-500 hover:text-slate-950 text-xs text-white border border-slate-700 transition" onclick="viewMemberDetail('${c.id}')">
                 ${c.firstName} ${c.lastName}
               </button>
             `).join('')}
@@ -658,34 +781,30 @@ function openMemberModal(member) {
   }
 
   relationsContainer.innerHTML = relHtml || '<p class="text-xs text-slate-500 italic">No direct family links recorded yet.</p>';
-
   modal.classList.remove('hidden');
 }
 
 /* -------------------------------------------------------------
- * 10. SCROLL ANIMATIONS, UTILS & CLOUD SETTINGS
+ * 10. SCROLL, MENU, UTILS & CLOUD SETTINGS
  * ------------------------------------------------------------- */
 function initThemeAndScroll() {
   initScrollAnimations();
+  updateHeroCount();
 
   const mobileMenuBtn = document.getElementById('mobileMenuBtn');
   const mobileNav = document.getElementById('mobileNav');
 
   if (mobileMenuBtn && mobileNav) {
-    mobileMenuBtn.addEventListener('click', () => {
-      mobileNav.classList.toggle('hidden');
-    });
-
+    mobileMenuBtn.addEventListener('click', () => mobileNav.classList.toggle('hidden'));
     mobileNav.querySelectorAll('a').forEach(link => {
       link.addEventListener('click', () => mobileNav.classList.add('hidden'));
     });
   }
 
-  // Reset database helper button (in footer)
   const resetBtn = document.getElementById('btnResetDatabase');
   if (resetBtn) {
     resetBtn.addEventListener('click', () => {
-      if (confirm("Reset family tree and site data back to the default seed dataset? Any custom members you added will be refreshed.")) {
+      if (confirm("Reset the family tree and clear added members?")) {
         resetFamilyDataToDefault();
         location.reload();
       }
@@ -723,8 +842,8 @@ function initThemeAndScroll() {
       updateCloudStatusUI(isConnected);
 
       alert(isConnected 
-        ? "✅ Cloud Database Connected! New family tree additions will now synchronize automatically across all devices."
-        : "ℹ️ Switched back to Local Persistent Storage.");
+        ? "Cloud Database Connected. New family tree additions will synchronize across devices."
+        : "Switched to Local Persistent Storage.");
 
       cloudModal.classList.add('hidden');
     });
@@ -735,9 +854,9 @@ function updateCloudStatusUI(isConnected) {
   const statusBadge = document.getElementById('cloudStatusBadge');
   if (statusBadge) {
     if (isConnected) {
-      statusBadge.innerHTML = `<span class="px-2.5 py-1 rounded-full badge-emerald text-xs font-bold">🟢 Cloud Sync Active (Supabase)</span>`;
+      statusBadge.innerHTML = `<span class="px-2.5 py-1 rounded-full badge-emerald text-xs font-bold">Cloud Sync Active</span>`;
     } else {
-      statusBadge.innerHTML = `<span class="px-2.5 py-1 rounded-full badge-gold text-xs font-bold">🟡 Local Persistent Storage (Offline Ready)</span>`;
+      statusBadge.innerHTML = `<span class="px-2.5 py-1 rounded-full badge-gold text-xs font-bold">Local Storage</span>`;
     }
   }
 }
@@ -787,4 +906,3 @@ function fireCelebrationConfetti() {
     }, 280);
   }
 }
-

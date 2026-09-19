@@ -1,129 +1,98 @@
-# 👑 KINTU FAMILY HERITAGE & LIVING TREE PORTAL
-> *Omulyango gw'Obukomera bwa Kintu — Katende, Mpigi & Worldwide Diaspora*
+# KINTU FAMILY HERITAGE & LIVING TREE PORTAL
+> *Orulyango rw'eka ya Kintu &mdash; Bunyoro-Kitara Kingdom & Worldwide Diaspora*
 
-A modern, culturally rich, and interactive web application celebrating the background, ancestral origin, and living lineage of the **Kintu Family**, built for high performance and seamless zero-configuration deployment on **Vercel**.
+A modern, culturally rich web application celebrating the ancestral background, history, and living lineage of the **Kintu Family** from **Bunyoro-Kitara Kingdom**, Western Uganda. Built for fast performance and seamless zero-configuration deployment on **Vercel**.
 
 ---
 
-## 🌟 Features Included
+## Features Included
 
-### 1. 🏺 Ancestral Origin & Clan Heritage ("Enono n'Ebyafaayo")
-- **Clan Totem**: *Omuziro gw'Olugave* (Pangolin) and *Akabbiro k'Akanfuka*.
-- **Ancestral Seat**: Historical founding in Katende, Mpigi district, Buganda Kingdom (1898).
-- **The 4 Founding Pillars**:
+### 1. Ancestral Origin & Bunyoro-Kitara Heritage ("Enono n'Ebyafaayo")
+- **Kingdom Heritage**: Bunyoro-Kitara Kingdom, Western Uganda.
+- **Empaako Tradition**: Celebrates the honorific praise names (Abwooli, Amooti, Akiiki, Apuuli, Araali, Atwoki, Adyeri, Bbala, Acaali, Atenyi).
+- **Clan Totem**: Engabi (Bushbuck) & Clan Totems.
+- **The 4 Cultural Pillars**:
   - *Obumu* (Unbreakable Unity)
-  - *Obuntubulamu* (Honor, Dignity & Modesty)
-  - *Okusoma* (Lifelong Wisdom & Pursuit of Knowledge)
-  - *Okujjukira* (Ancestral Reverence)
-- **Interactive Historical Timeline**: Chronicle spanning 1898 to 2026, marking education milestones, independence era, international migration, and centenary reunions.
+  - *Engeso Nungi* (Integrity, Honor & Dignity)
+  - *Okusoma n'Okwekamba* (Wisdom, Diligence & Craftsmanship)
+  - *Okwijuka Abakuru* (Ancestral Reverence)
+- **Interactive Historical Timeline**: Chronicling foundational homesteads, education, and diaspora journeys.
 
-### 2. 🌳 Interactive Family Tree ("Omuti gw'Ekika")
-- **Interactive Hierarchical Engine**:
-  - Drag to pan across branches.
-  - Mouse-wheel / pinch-to-zoom controls (+ / - / reset view).
-  - Multi-generational layout: Generation 1 (Founders) $\rightarrow$ Generation 2 (Elders) $\rightarrow$ Generation 3 (Grandchildren) $\rightarrow$ Generation 4 (Youth).
-  - Curved Bezier lineage connectors linking parents, spouses, and children.
-  - Search bar with instant autocomplete to jump directly to any relative's card with glowing pulse highlighting.
-  - Generation and Branch filtering pills.
-- **Member Detail Profile Drawer**:
-  - Click any card to inspect full bio, portrait, cultural name (*erinnya ly'ekika*), occupation, dates, and direct links to jump to parents, spouse, or children.
+### 2. Interactive Family Tree ("Orulyango rw'eka ya Kintu")
+- **Clean Canvas**: Ready for you and family members to add the founding ancestor and all relatives directly through the website.
+- **Interactive Controls**: Drag to pan across branches, zoom in and out, and filter by generation or lineage branch.
+- **Animated Lineage Currents**: Living flowing curves showing connection between parents and children.
+- **Search & Auto-focus**: Jump directly to any relative's card with glowing highlight.
 
-### 3. ✍️ "Add Yourself to the Tree" (Self-Registration Wizard)
-- A 4-step interactive modal wizard enabling any family member to join the living tree:
-  1. **Personal Information**: First Name, Surname, Cultural Name, Gender, Birth Year.
-  2. **Lineage Connection**: Select Father or Mother from existing tree members (automatically computes generational hierarchy and links family relations).
-  3. **Location & Story**: City, Country, Profession, Short Bio, and Photo URL / avatar.
-  4. **Family PIN Verification**: Protects the tree from unauthorized edits (Default passcode: `KINTU2026`).
-- **Instant Live Update**: Upon submission, the new node immediately connects to the visual tree and persists in the visitor's local database!
+### 3. "Add Member to Tree" (Self-Registration Wizard)
+- A 4-step wizard modal allowing relatives or administrators to add members:
+  1. **Personal Information**: First Name, Last Name, Empaako (Praise Name), Gender, Birth Year, and optional Deceased/Memorial toggle.
+  2. **Lineage Connection**: Connect to an existing parent in the tree (or leave blank to establish a Generation 1 root node).
+  3. **Location & Bio**: City, Country, Occupation, Life Story, and Photo URL.
+  4. **Passcode Verification**: Protects against unauthorized edits (Default passcode: `KINTU2026`).
 
-### 4. 🌍 Global Diaspora Reach & Directory
-- Real-time percentage distribution of family members across Uganda, UK, USA, Canada, Kenya, and beyond.
-- Searchable Member Directory with filters by profession (Technology, Healthcare, Law, Business, Agriculture, Youth/Students) to foster youth mentorship and networking.
+### 4. Living Photo Archives & In Memoriam Wall
+- **Photo Archive**: Upload historical portraits, homestead pictures, and family events.
+- **In Memoriam Wall**: Honoring departed elders and ancestors recorded with memorial years.
 
-### 5. 📸 Living Archives & Photo Gallery ("Ebiwandiiko n'Ebifaananyi")
-- Historical vintage photographs, wedding introductions (*Kwanjula*), centenary reunions, and ancestral groves.
-- Lightbox view with captions, dates, and historical context.
-
-### 6. 🕊️ In Memoriam Wall ("Abaatusooka")
-- Dignified memorial space celebrating departed patriarchs, matriarchs, and ancestors with words of wisdom, years of life, and candle lighting.
-
-### 7. 📅 Grand Reunion 2026 & RSVP
-- Countdown to the December 2026 Gathering in Kampala & Katende.
-- RSVP registration system with guest counter.
+### 5. Global Diaspora & Searchable Directory
+- Visual distribution of family members across Uganda and the global diaspora.
+- Searchable directory filterable by professional fields.
 
 ---
 
-## 🚀 How to Run Locally
+## How to Run Locally
 
-You can run this project locally on your computer with **no dependencies needed**:
+You can preview the website locally on your computer with **no dependencies needed**:
 1. Open the folder: `c:\Users\TEKGO\Documents\antigravity\fervent-pascal\`
-2. Double-click **`index.html`** in any web browser (Google Chrome, Microsoft Edge, Safari, Firefox).
-3. Everything is fully functional immediately!
+2. Double-click **`index.html`** in any web browser (Google Chrome, Microsoft Edge, Firefox, Safari).
+3. Click **"Add Member to Tree"** to start populating your family lineage!
 
 ---
 
-## 🌐 Deploying to Vercel
+## Deploying to Vercel
 
-This repository is pre-configured with `vercel.json` for 1-click zero-config deployment:
+This repository includes `vercel.json` for 1-click zero-config deployment:
 
-### Option A: Via GitHub (Recommended)
-1. Commit and push these files to your GitHub repository:
+1. Push your changes to GitHub:
    ```bash
    git add .
-   git commit -m "feat: complete Kintu family heritage website and interactive tree"
+   git commit -m "feat: Kintu family website for Bunyoro-Kitara with empty living tree and vector icons"
    git push origin main
    ```
-2. Go to [vercel.com](https://vercel.com) and log in.
-3. Click **"Add New..." $\rightarrow$ "Project"**.
-4. Select the repository: `laptertechnologies-hue/KINTU-FAMILY`.
-5. Click **"Deploy"**! Vercel will launch your site live with a free SSL domain (e.g., `kintu-family.vercel.app`).
-
-### Option B: Via Vercel CLI
-```bash
-npm i -g vercel
-vercel
-```
+2. Log in to [vercel.com](https://vercel.com).
+3. Select **"Add New..." &rarr; "Project"**, pick **`KINTU-FAMILY`**, and click **"Deploy"**!
 
 ---
 
-## 🗄️ Database Architecture & Cloud Roadmap
+## Database Architecture (Local + Cloud Sync)
 
-Currently, the application uses an in-browser persistent store (`localStorage`) loaded from `js/data.js`. Any member added through the **"Add Yourself"** form persists on that device.
-
-### Upgrading to Cloud Database (Supabase / Vercel Postgres)
-For full multi-user cloud synchronization across all family members worldwide:
-1. Create a free project at [Supabase](https://supabase.com).
-2. Run this SQL migration:
-```sql
-CREATE TABLE family_members (
-  id TEXT PRIMARY KEY,
-  first_name TEXT NOT NULL,
-  last_name TEXT NOT NULL,
-  traditional_name TEXT,
-  gender TEXT,
-  generation INT DEFAULT 1,
-  birth_year INT,
-  death_year INT,
-  is_deceased BOOLEAN DEFAULT FALSE,
-  branch TEXT,
-  location TEXT,
-  country TEXT,
-  occupation TEXT,
-  bio TEXT,
-  photo_url TEXT,
-  parent_ids TEXT[],
-  spouse_ids TEXT[],
-  children_ids TEXT[],
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-```
-3. Connect your frontend fetch requests to Supabase REST API or serverless Next.js / Edge routes on Vercel.
-
----
-
-## 🛡️ Administration & Customization
-- **Family PIN**: The default verification passcode is configured as `KINTU2026` in `js/data.js`. You can change it anytime to any secret word.
-- **Reset Demo Data**: If you want to reset the tree back to the original 25 members, click the **"Reset Demo Data"** link in the footer.
-
----
-*Developed with pride for the Kintu Family.*
+- **Local Storage (Default)**: All members you add are saved immediately in your browser (`localStorage`).
+- **Cloud Database (Supabase / PostgreSQL)**:
+  To synchronize live across all family members' phones and laptops worldwide:
+  1. Create a free project at [supabase.com](https://supabase.com).
+  2. Run this SQL query in the Supabase SQL editor:
+     ```sql
+     CREATE TABLE family_members (
+       id TEXT PRIMARY KEY,
+       first_name TEXT NOT NULL,
+       last_name TEXT NOT NULL,
+       empaako TEXT,
+       gender TEXT,
+       generation INT DEFAULT 1,
+       birth_year INT,
+       death_year INT,
+       is_deceased BOOLEAN DEFAULT FALSE,
+       branch TEXT,
+       location TEXT,
+       country TEXT,
+       occupation TEXT,
+       bio TEXT,
+       photo_url TEXT,
+       parent_ids TEXT[],
+       spouse_ids TEXT[],
+       children_ids TEXT[],
+       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+     );
+     ```
+  3. In the website navigation, click **Database** and paste your Supabase Project URL and Anon API Key.
