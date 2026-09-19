@@ -1,0 +1,9 @@
+﻿{
+  "name": "kintu-family-portal",
+  "version": "1.0.0",
+  "description": "Kintu Family Heritage Portal - Bunyoro-Kitara Kingdom",
+  "type": "module",
+  "dependencies": {
+    "pg": "^8.12.0"
+  }
+}

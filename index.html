@@ -1,482 +1,354 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" class="scroll-smooth">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Kintu Family Heritage & Interactive Family Tree | Bunyoro-Kitara Kingdom</title>
-  <meta name="description" content="The official digital heritage portal and interactive living family tree of the Kintu family lineage, tracing ancestral roots in Bunyoro-Kitara Kingdom, Uganda to the worldwide diaspora.">
-
-  <!-- Tailwind CSS CDN -->
+  <title>Kintu Family Heritage | Bunyoro-Kitara Kingdom</title>
+  <meta name="description" content="The official digital heritage portal and interactive living family tree of the Kintu family lineage, tracing ancestral roots in Bunyoro-Kitara Kingdom, Uganda.">
   <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- Google Fonts: Plus Jakarta Sans & Playfair Display -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;0,900;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-
-  <!-- Custom Styles -->
   <link rel="stylesheet" href="css/styles.css">
-
-  <!-- Canvas Confetti CDN -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
-
   <script>
     tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            brandGold: '#d97706',
-            brandEmerald: '#065f46',
-            brandSlate: '#0b0f17'
-          }
-        }
-      }
+      theme: { extend: { colors: { brandGold: '#b45309', brandDark: '#111827' } } }
     }
   </script>
 </head>
-<body class="bg-[#0b0f17] text-slate-100 min-h-screen flex flex-col selection:bg-amber-500 selection:text-slate-950">
+<body class="bg-[#111827] text-slate-100 min-h-screen flex flex-col">
 
-  <!-- ========================================================= -->
-  <!-- NAVIGATION BAR -->
-  <!-- ========================================================= -->
-  <header class="sticky top-0 z-50 glass-panel border-b border-slate-800/80">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-      <!-- Brand & Crest -->
-      <a href="#" class="flex items-center gap-3.5 group">
-        <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-slate-950 shadow-[0_0_20px_rgba(217,119,6,0.35)] group-hover:scale-105 transition animate-float">
-          <svg class="w-6 h-6 text-slate-950" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <!-- NAV -->
+  <header class="sticky top-0 z-50 bg-[#0f172a]/95 backdrop-blur border-b border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <a href="#" class="flex items-center gap-3 group">
+        <div class="w-9 h-9 rounded-lg bg-amber-700 flex items-center justify-center shadow animate-float">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
           </svg>
         </div>
         <div>
-          <span class="text-xs uppercase tracking-widest text-amber-400 font-bold block leading-none">Bunyoro-Kitara Heritage</span>
-          <span class="text-lg sm:text-xl font-extrabold text-white font-serif-royal">The Kintu Family</span>
+          <span class="text-[10px] uppercase tracking-widest text-amber-600 font-bold block leading-none">Bunyoro-Kitara</span>
+          <span class="text-base font-extrabold text-white font-serif-royal">The Kintu Family</span>
         </div>
       </a>
-
-      <!-- Desktop Nav Links -->
-      <nav class="hidden lg:flex items-center space-x-7 text-xs font-semibold uppercase tracking-wider text-slate-300">
-        <a href="#origins" class="hover:text-amber-400 transition">Origins & Clan</a>
-        <a href="#treeSection" class="hover:text-amber-400 transition">Family Tree</a>
-        <a href="#diaspora" class="hover:text-amber-400 transition">Diaspora</a>
-        <a href="#directory" class="hover:text-amber-400 transition">Directory</a>
-        <a href="#archives" class="hover:text-amber-400 transition">Archives</a>
-        <a href="#memorial" class="hover:text-amber-400 transition">In Memoriam</a>
-        <a href="#reunions" class="hover:text-amber-400 transition">Reunion 2026</a>
+      <nav class="hidden lg:flex items-center space-x-6 text-xs font-semibold uppercase tracking-wider text-slate-400">
+        <a href="#origins" class="hover:text-amber-500 transition">Origins</a>
+        <a href="#treeSection" class="hover:text-amber-500 transition">Family Tree</a>
+        <a href="#directory" class="hover:text-amber-500 transition">Directory</a>
+        <a href="#archives" class="hover:text-amber-500 transition">Archives</a>
+        <a href="#memorial" class="hover:text-amber-500 transition">In Memoriam</a>
+        <a href="#reunions" class="hover:text-amber-500 transition">Reunion 2026</a>
       </nav>
-
-      <!-- Action Buttons & Mobile Menu Toggle -->
       <div class="flex items-center gap-3">
-        <button id="btnOpenCloudSettings" class="hidden md:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl glass-panel text-slate-300 hover:text-amber-400 border border-slate-700 text-xs font-semibold hover:scale-[1.02] transition" title="Database Configuration">
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2 1.5 3 3.5 3h9c2 0 3.5-1 3.5-3V7M4 7c0-2 1.5-3 3.5-3h9c2 0 3.5 1 3.5 3M4 7h16m-8 4v6m-3-3h6"/></svg>
-          <span>Database</span>
-        </button>
-        <button id="btnOpenAddMember" class="hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 text-xs font-extrabold shadow-lg shadow-amber-500/20 hover:scale-[1.02] transition btn-gold-glow">
+        <button id="btnOpenAddMember" class="hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-700 hover:bg-amber-600 text-white text-xs font-bold shadow transition">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
-          <span>Add Yourself to Tree</span>
+          <span>Add to Tree</span>
         </button>
-        <button id="mobileMenuBtn" class="lg:hidden p-2 rounded-lg text-slate-300 hover:bg-slate-800" aria-label="Toggle navigation">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/></svg>
+        <button id="mobileMenuBtn" class="lg:hidden p-2 rounded-lg text-slate-400 hover:bg-slate-800" aria-label="Toggle navigation">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/></svg>
         </button>
       </div>
     </div>
-
-    <!-- Mobile Nav Drawer -->
-    <div id="mobileNav" class="hidden lg:hidden glass-panel border-b border-slate-800 px-4 py-4 space-y-2">
-      <a href="#origins" class="block px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800 rounded-lg">Ancestral Origin & Clan</a>
-      <a href="#treeSection" class="block px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800 rounded-lg">Interactive Family Tree</a>
-      <a href="#diaspora" class="block px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800 rounded-lg">Diaspora Distribution</a>
-      <a href="#directory" class="block px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800 rounded-lg">Family Directory</a>
-      <a href="#archives" class="block px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800 rounded-lg">Living Archives</a>
-      <a href="#memorial" class="block px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800 rounded-lg">In Memoriam Wall</a>
-      <a href="#reunions" class="block px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800 rounded-lg">Reunion 2026</a>
-      <div class="pt-2 flex flex-col gap-2">
-        <button onclick="document.getElementById('btnOpenAddMember').click()" class="w-full py-2.5 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs flex items-center justify-center gap-2">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
-          Add Yourself to Tree
-        </button>
-        <button onclick="document.getElementById('btnOpenCloudSettings').click()" class="w-full py-2.5 rounded-xl glass-panel border border-slate-700 text-slate-300 font-bold text-xs">
-          Database Settings
+    <div id="mobileNav" class="hidden lg:hidden bg-[#0f172a] border-b border-slate-800 px-4 py-3 space-y-1">
+      <a href="#origins" class="block px-3 py-2 text-sm font-medium text-slate-300 hover:bg-slate-800 rounded-lg">Origins & Clan</a>
+      <a href="#treeSection" class="block px-3 py-2 text-sm font-medium text-slate-300 hover:bg-slate-800 rounded-lg">Family Tree</a>
+      <a href="#directory" class="block px-3 py-2 text-sm font-medium text-slate-300 hover:bg-slate-800 rounded-lg">Family Directory</a>
+      <a href="#archives" class="block px-3 py-2 text-sm font-medium text-slate-300 hover:bg-slate-800 rounded-lg">Photo Archives</a>
+      <a href="#memorial" class="block px-3 py-2 text-sm font-medium text-slate-300 hover:bg-slate-800 rounded-lg">In Memoriam</a>
+      <a href="#reunions" class="block px-3 py-2 text-sm font-medium text-slate-300 hover:bg-slate-800 rounded-lg">Reunion 2026</a>
+      <div class="pt-2">
+        <button onclick="document.getElementById('btnOpenAddMember').click()" class="w-full py-2.5 rounded-lg bg-amber-700 text-white font-bold text-xs flex items-center justify-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          Add to Tree
         </button>
       </div>
     </div>
   </header>
 
-  <!-- ========================================================= -->
-  <!-- HERO SECTION -->
-  <!-- ========================================================= -->
-  <section class="relative pt-16 pb-24 lg:pt-28 lg:pb-36 bg-heritage-pattern overflow-hidden">
-    <!-- Ambient Glow Orbs -->
-    <div class="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[380px] bg-amber-600/20 blur-[130px] rounded-full pointer-events-none animate-glow-pulse"></div>
-    <div class="absolute bottom-10 left-10 w-96 h-96 bg-emerald-700/15 blur-[140px] rounded-full pointer-events-none animate-glow-pulse" style="animation-delay: 2s;"></div>
-
+  <!-- HERO -->
+  <section class="relative pt-16 pb-20 lg:pt-24 lg:pb-32 bg-heritage-pattern overflow-hidden">
+    <div class="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] bg-amber-900/15 blur-[120px] rounded-full pointer-events-none"></div>
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
-      <!-- Cultural Clan Pill -->
-      <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold mb-6 reveal-fade-up">
-        <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
-        <span>Bunyoro-Kitara Kingdom Lineage &bull; Western Uganda</span>
+      <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-900/20 border border-amber-800/40 text-amber-500 text-xs font-bold mb-6 reveal-fade-up">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+        <span>Bunyoro-Kitara Kingdom &bull; Western Uganda</span>
       </div>
-
-      <!-- Main Headline -->
-      <h1 class="text-4xl sm:text-6xl lg:text-7xl font-bold font-serif-royal text-white tracking-tight mb-6 max-w-4xl mx-auto leading-tight reveal-fade-up delay-100">
-        Rooted in <span class="text-gold-gradient">Honor</span>, United Across <span class="text-emerald-gradient">Generations</span>
+      <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold font-serif-royal text-white tracking-tight mb-5 max-w-4xl mx-auto leading-tight reveal-fade-up delay-100">
+        Rooted in <span class="text-gold-gradient">Honor</span>,<br>United Across <span class="text-emerald-gradient">Generations</span>
       </h1>
-
-      <!-- Runyoro Traditional Motto & Subtitle -->
-      <p class="text-base sm:text-lg text-slate-300 max-w-2xl mx-auto mb-3 font-medium reveal-fade-up delay-200">
+      <p class="text-base sm:text-lg text-slate-400 max-w-2xl mx-auto mb-3 font-medium reveal-fade-up delay-200 italic">
         "Obumu n'Engeso Nungi: Amabara g'Ekika Tegabura"
       </p>
-      <p class="text-xs sm:text-sm text-slate-400 max-w-2xl mx-auto mb-10 leading-relaxed reveal-fade-up delay-300">
-        The digital heritage home of the Kintu family. Tracing our lineage from our ancestral roots in Bunyoro-Kitara Kingdom to descendants living across Uganda and the global diaspora.
+      <p class="text-xs sm:text-sm text-slate-500 max-w-xl mx-auto mb-10 leading-relaxed reveal-fade-up delay-300">
+        The digital heritage home of the Kintu family. Tracing our lineage from ancestral roots in Bunyoro-Kitara Kingdom.
       </p>
-
-      <!-- Action Buttons -->
       <div class="flex flex-wrap items-center justify-center gap-4 reveal-fade-up delay-300">
-        <a href="#treeSection" class="px-7 py-3.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-sm shadow-xl shadow-amber-500/25 hover:scale-[1.03] transition flex items-center gap-2 btn-gold-glow">
+        <a href="#treeSection" class="px-6 py-3 rounded-lg bg-amber-700 hover:bg-amber-600 text-white font-bold text-sm shadow-lg transition flex items-center gap-2 btn-gold-glow">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
-          <span>Explore Living Tree</span>
+          <span>Explore Family Tree</span>
         </a>
-        <button id="btnHeroAddMember" class="px-7 py-3.5 rounded-xl glass-panel border border-amber-500/40 text-amber-300 hover:bg-amber-500/10 font-bold text-sm hover:scale-[1.03] transition flex items-center gap-2">
+        <button id="btnHeroAddMember" class="px-6 py-3 rounded-lg bg-slate-800 border border-slate-700 text-slate-200 hover:bg-slate-700 font-bold text-sm transition flex items-center gap-2">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
           <span>Add Yourself to Tree</span>
         </button>
-        <a href="#origins" class="px-6 py-3.5 rounded-xl glass-panel text-slate-300 hover:text-white text-sm font-semibold transition">
-          Discover Our Heritage
-        </a>
+        <a href="#origins" class="px-6 py-3 rounded-lg text-slate-400 hover:text-white text-sm font-semibold transition">Our Heritage</a>
       </div>
-
-      <!-- Quick Metrics Counters -->
-      <div class="mt-16 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto reveal-zoom-in delay-300">
-        <div class="p-4 rounded-2xl glass-panel border border-slate-800 hover:border-amber-500/40 transition">
-          <span class="block text-2xl sm:text-3xl font-extrabold text-amber-400 font-serif-royal">1898</span>
-          <span class="text-xs text-slate-400 font-medium">Founding Homestead</span>
+      <div class="mt-14 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl mx-auto reveal-zoom-in delay-300">
+        <div class="p-4 rounded-xl bg-slate-800/60 border border-slate-700 hover:border-slate-600 transition">
+          <span class="block text-2xl font-extrabold text-amber-500 font-serif-royal">1898</span>
+          <span class="text-xs text-slate-400">Founding Homestead</span>
         </div>
-        <div class="p-4 rounded-2xl glass-panel border border-slate-800 hover:border-emerald-500/40 transition">
-          <span class="block text-2xl sm:text-3xl font-extrabold text-emerald-400 font-serif-royal">Bunyoro</span>
-          <span class="text-xs text-slate-400 font-medium">Kingdom Heritage</span>
+        <div class="p-4 rounded-xl bg-slate-800/60 border border-slate-700 hover:border-slate-600 transition">
+          <span class="block text-2xl font-extrabold text-slate-200 font-serif-royal">Bunyoro</span>
+          <span class="text-xs text-slate-400">Kingdom Heritage</span>
         </div>
-        <div class="p-4 rounded-2xl glass-panel border border-slate-800 hover:border-amber-500/40 transition">
-          <span class="block text-2xl sm:text-3xl font-extrabold text-amber-400 font-serif-royal" id="heroMemberCount">0</span>
-          <span class="text-xs text-slate-400 font-medium">Documented Relatives</span>
+        <div class="p-4 rounded-xl bg-slate-800/60 border border-slate-700 hover:border-slate-600 transition">
+          <span class="block text-2xl font-extrabold text-amber-500 font-serif-royal" id="heroMemberCount">0</span>
+          <span class="text-xs text-slate-400">Documented Relatives</span>
         </div>
-        <div class="p-4 rounded-2xl glass-panel border border-slate-800 hover:border-purple-500/40 transition">
-          <span class="block text-2xl sm:text-3xl font-extrabold text-purple-400 font-serif-royal">Empaako</span>
-          <span class="text-xs text-slate-400 font-medium">Praise Traditions</span>
+        <div class="p-4 rounded-xl bg-slate-800/60 border border-slate-700 hover:border-slate-600 transition">
+          <span class="block text-2xl font-extrabold text-slate-200 font-serif-royal">Empaako</span>
+          <span class="text-xs text-slate-400">Praise Tradition</span>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ========================================================= -->
-  <!-- SECTION: ANCESTRAL ORIGIN & CLAN HERITAGE -->
-  <!-- ========================================================= -->
-  <section id="origins" class="py-20 bg-slate-900/60 border-y border-slate-800/80 relative">
+  <!-- ORIGINS & CLAN -->
+  <section id="origins" class="py-20 bg-[#0f172a] border-y border-slate-800 relative">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="text-center max-w-3xl mx-auto mb-16 reveal-fade-up">
-        <span class="text-xs font-extrabold uppercase tracking-widest text-amber-400">Enono n'Ebyafaayo By'Ekika</span>
+      <div class="text-center max-w-3xl mx-auto mb-14 reveal-fade-up">
+        <span class="text-xs font-extrabold uppercase tracking-widest text-amber-600">Enono n'Ebyafaayo By'Ekika</span>
         <h2 class="text-3xl sm:text-4xl font-bold font-serif-royal text-white mt-1 mb-3">Ancestral Roots in Bunyoro-Kitara</h2>
-        <p class="text-xs sm:text-sm text-slate-400 leading-relaxed">
-          The Kintu family draws its identity from the ancient kingdom of Bunyoro-Kitara. Our heritage is rooted in the royal traditions, Empaako praise names, communal solidarity, and love for knowledge.
-        </p>
+        <p class="text-xs sm:text-sm text-slate-400 leading-relaxed">The Kintu family draws its identity from the ancient kingdom of Bunyoro-Kitara. Our heritage is rooted in the royal traditions, Empaako praise names, communal solidarity, and love for knowledge.</p>
       </div>
-
-      <!-- Clan Identity Cards with Clean SVG Icons -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
-        <div class="glass-panel rounded-2xl p-6 border border-amber-500/30 flex items-start gap-4 reveal-fade-left">
-          <div class="w-12 h-12 rounded-xl bg-amber-500/15 flex items-center justify-center text-amber-400 shrink-0">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
-            </svg>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-14">
+        <div class="bg-slate-800/50 rounded-2xl p-6 border border-slate-700 flex items-start gap-4 reveal-fade-left">
+          <div class="w-10 h-10 rounded-lg bg-amber-900/30 flex items-center justify-center text-amber-600 shrink-0">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
           </div>
           <div>
             <h3 class="text-base font-bold text-white mb-1">Empaako Tradition</h3>
-            <p class="text-xs text-amber-400 font-semibold mb-1">Honorific Praise Names</p>
-            <p class="text-xs text-slate-400 leading-relaxed">The sacred Bunyoro social custom uniting families: Abwooli, Amooti, Akiiki, Apuuli, Araali, Atwoki, Adyeri, Bbala, Acaali, Atenyi.</p>
+            <p class="text-xs text-amber-600 font-semibold mb-1">Honorific Praise Names</p>
+            <p class="text-xs text-slate-400 leading-relaxed">The sacred Bunyoro social custom: Abwooli, Amooti, Akiiki, Apuuli, Araali, Atwoki, Adyeri, Bbala, Acaali, Atenyi.</p>
           </div>
         </div>
-
-        <div class="glass-panel rounded-2xl p-6 border border-emerald-500/30 flex items-start gap-4 reveal-fade-up">
-          <div class="w-12 h-12 rounded-xl bg-emerald-500/15 flex items-center justify-center text-emerald-400 shrink-0">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-            </svg>
+        <div class="bg-slate-800/50 rounded-2xl p-6 border border-slate-700 flex items-start gap-4 reveal-fade-up">
+          <div class="w-10 h-10 rounded-lg bg-slate-700 flex items-center justify-center text-slate-300 shrink-0">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
           </div>
           <div>
             <h3 class="text-base font-bold text-white mb-1">Ancestral Homeland</h3>
-            <p class="text-xs text-emerald-400 font-semibold mb-1">Bunyoro-Kitara, Western Uganda</p>
+            <p class="text-xs text-slate-300 font-semibold mb-1">Bunyoro-Kitara, Western Uganda</p>
             <p class="text-xs text-slate-400 leading-relaxed">The historical heartland where our earliest forebears established homesteads, fertile farms, and community foundations.</p>
           </div>
         </div>
-
-        <div class="glass-panel rounded-2xl p-6 border border-purple-500/30 flex items-start gap-4 reveal-fade-right">
-          <div class="w-12 h-12 rounded-xl bg-purple-500/15 flex items-center justify-center text-purple-400 shrink-0">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
-            </svg>
+        <div class="bg-slate-800/50 rounded-2xl p-6 border border-slate-700 flex items-start gap-4 reveal-fade-right">
+          <div class="w-10 h-10 rounded-lg bg-slate-700 flex items-center justify-center text-slate-300 shrink-0">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
           </div>
           <div>
             <h3 class="text-base font-bold text-white mb-1">Traditional Salutation</h3>
-            <p class="text-xs text-purple-400 font-semibold mb-1">"Oraire ota, Baana ba Kintu!"</p>
+            <p class="text-xs text-slate-300 font-semibold mb-1">"Oraire ota, Baana ba Kintu!"</p>
             <p class="text-xs text-slate-400 leading-relaxed">Warm greeting exchanged between descendants to affirm shared bloodline, respect, and mutual kinship.</p>
           </div>
         </div>
       </div>
-
-      <!-- Founding Pillars -->
-      <div class="mb-20">
+      <div class="mb-16">
         <h3 class="text-xl font-bold font-serif-royal text-center text-white mb-8">The Four Pillars of Kintu Family Heritage</h3>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div class="glass-panel p-5 rounded-2xl border border-slate-800 reveal-fade-up delay-100">
-            <div class="text-amber-400 text-base font-bold mb-1">1. Obumu</div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div class="bg-slate-800/40 p-5 rounded-2xl border border-slate-700 reveal-fade-up delay-100">
+            <div class="text-amber-600 text-sm font-bold mb-1">1. Obumu</div>
             <h4 class="text-sm font-semibold text-white mb-1">Unbreakable Unity</h4>
             <p class="text-xs text-slate-400 leading-relaxed">Strength lies in kinship and shared roots. We support and uplift each other across all borders.</p>
           </div>
-          <div class="glass-panel p-5 rounded-2xl border border-slate-800 reveal-fade-up delay-200">
-            <div class="text-emerald-400 text-base font-bold mb-1">2. Engeso Nungi</div>
-            <h4 class="text-sm font-semibold text-white mb-1">Integrity & Character</h4>
+          <div class="bg-slate-800/40 p-5 rounded-2xl border border-slate-700 reveal-fade-up delay-200">
+            <div class="text-slate-300 text-sm font-bold mb-1">2. Engeso Nungi</div>
+            <h4 class="text-sm font-semibold text-white mb-1">Integrity &amp; Character</h4>
             <p class="text-xs text-slate-400 leading-relaxed">Preserving the esteemed moral character of Bunyoro-Kitara with humility, honesty, and honor.</p>
           </div>
-          <div class="glass-panel p-5 rounded-2xl border border-slate-800 reveal-fade-up delay-300">
-            <div class="text-blue-400 text-base font-bold mb-1">3. Okusoma</div>
-            <h4 class="text-sm font-semibold text-white mb-1">Wisdom & Diligence</h4>
+          <div class="bg-slate-800/40 p-5 rounded-2xl border border-slate-700 reveal-fade-up delay-300">
+            <div class="text-slate-300 text-sm font-bold mb-1">3. Okusoma</div>
+            <h4 class="text-sm font-semibold text-white mb-1">Wisdom &amp; Diligence</h4>
             <p class="text-xs text-slate-400 leading-relaxed">Dedication to education, skilled craftsmanship, entrepreneurship, and leadership.</p>
           </div>
-          <div class="glass-panel p-5 rounded-2xl border border-slate-800 reveal-fade-up delay-400">
-            <div class="text-purple-400 text-base font-bold mb-1">4. Okwijuka Abakuru</div>
+          <div class="bg-slate-800/40 p-5 rounded-2xl border border-slate-700 reveal-fade-up delay-400">
+            <div class="text-slate-300 text-sm font-bold mb-1">4. Okwijuka Abakuru</div>
             <h4 class="text-sm font-semibold text-white mb-1">Ancestral Reverence</h4>
             <p class="text-xs text-slate-400 leading-relaxed">Honoring the sacrifices of our elders, keeping our stories alive, and passing values to our youth.</p>
           </div>
         </div>
       </div>
-
-      <!-- Historical Timeline -->
       <div class="max-w-4xl mx-auto">
         <h3 class="text-2xl font-bold font-serif-royal text-center text-white mb-2">Chronicle of Milestones</h3>
-        <p class="text-xs text-center text-slate-400 mb-12">The historical journey of the Kintu lineage from Bunyoro-Kitara to the world.</p>
-        
-        <div id="timelineList" class="relative before:absolute before:inset-0 before:left-5 md:before:left-1/2 before:-translate-x-px before:w-0.5 before:bg-gradient-to-b before:from-amber-500 before:via-emerald-500 before:to-purple-500">
-          <!-- Populated by js/app.js -->
-        </div>
+        <p class="text-xs text-center text-slate-500 mb-12">The historical journey of the Kintu lineage.</p>
+        <div id="timelineList" class="relative before:absolute before:inset-0 before:left-5 md:before:left-1/2 before:-translate-x-px before:w-0.5 before:bg-amber-800/50"></div>
       </div>
     </div>
   </section>
 
-  <!-- ========================================================= -->
-  <!-- SECTION: INTERACTIVE FAMILY TREE -->
-  <!-- ========================================================= -->
+  <!-- FAMILY TREE -->
   <section id="treeSection" class="py-20 relative">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
         <div>
-          <span class="text-xs font-extrabold uppercase tracking-widest text-amber-400">Orulyango rw'eka ya Kintu</span>
+          <span class="text-xs font-extrabold uppercase tracking-widest text-amber-600">Orulyango rw'eka ya Kintu</span>
           <h2 class="text-3xl sm:text-4xl font-bold font-serif-royal text-white mt-1">Interactive Family Tree</h2>
-          <p class="text-xs sm:text-sm text-slate-400 mt-1 max-w-xl">
-            Drag to explore branches, zoom in and out, or click any member to view their biography and connections.
-          </p>
+          <p class="text-xs sm:text-sm text-slate-400 mt-1 max-w-xl">Drag to explore branches, zoom to navigate, or click any member to view their profile and connections.</p>
         </div>
-
-        <button onclick="document.getElementById('btnOpenAddMember').click()" class="self-start md:self-auto px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 text-xs font-extrabold shadow-lg shadow-amber-500/20 hover:scale-[1.02] transition flex items-center gap-2">
+        <button onclick="document.getElementById('btnOpenAddMember').click()" class="self-start md:self-auto px-5 py-2.5 rounded-lg bg-amber-700 hover:bg-amber-600 text-white text-xs font-bold shadow transition flex items-center gap-2">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
           <span>Add Member to Tree</span>
         </button>
       </div>
-
-      <!-- Tree Filter Toolbar -->
-      <div class="mb-4 p-4 rounded-2xl glass-panel border border-slate-800 flex flex-wrap items-center justify-between gap-4">
+      <div class="mb-4 p-4 rounded-2xl bg-slate-800/50 border border-slate-700 flex flex-wrap items-center justify-between gap-4">
         <div class="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
           <span class="text-xs font-bold text-slate-400 uppercase tracking-wider mr-1">Generation:</span>
-          <button class="filter-gen-btn px-3 py-1 rounded-lg text-xs font-semibold bg-amber-500 text-slate-950 transition" data-gen="all">All</button>
-          <button class="filter-gen-btn px-3 py-1 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition" data-gen="1">G1: Roots</button>
-          <button class="filter-gen-btn px-3 py-1 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition" data-gen="2">G2: Elders</button>
-          <button class="filter-gen-btn px-3 py-1 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition" data-gen="3">G3: Grandchildren</button>
-          <button class="filter-gen-btn px-3 py-1 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition" data-gen="4">G4: Youth</button>
+          <button class="filter-gen-btn px-3 py-1 rounded-lg text-xs font-semibold bg-amber-700 text-white transition" data-gen="all">All</button>
+          <button class="filter-gen-btn px-3 py-1 rounded-lg text-xs font-semibold bg-slate-700 text-slate-300 hover:bg-slate-600 transition" data-gen="1">G1: Roots</button>
+          <button class="filter-gen-btn px-3 py-1 rounded-lg text-xs font-semibold bg-slate-700 text-slate-300 hover:bg-slate-600 transition" data-gen="2">G2: Elders</button>
+          <button class="filter-gen-btn px-3 py-1 rounded-lg text-xs font-semibold bg-slate-700 text-slate-300 hover:bg-slate-600 transition" data-gen="3">G3: Children</button>
+          <button class="filter-gen-btn px-3 py-1 rounded-lg text-xs font-semibold bg-slate-700 text-slate-300 hover:bg-slate-600 transition" data-gen="4">G4: Youth</button>
         </div>
-
         <div class="flex items-center gap-3 w-full sm:w-auto">
-          <div class="relative min-w-[170px]">
-            <select id="branchSelectFilter" class="w-full bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:border-amber-500 appearance-none">
-              <option value="all">All Lineage Branches</option>
-            </select>
-          </div>
-
-          <div class="relative flex-1 sm:w-64">
-            <input type="text" id="treeSearchInput" placeholder="Find relative by name..." class="w-full bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-xl pl-9 pr-3 py-2 focus:outline-none focus:border-amber-500">
-            <svg class="w-4 h-4 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-            <div id="treeSearchResults" class="hidden absolute top-full left-0 right-0 mt-1.5 bg-slate-900/95 backdrop-blur-xl border border-slate-700 rounded-xl shadow-2xl z-50 overflow-hidden max-h-60 overflow-y-auto"></div>
+          <select id="branchSelectFilter" class="bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:border-amber-600 min-w-[150px]">
+            <option value="all">All Branches</option>
+          </select>
+          <div class="relative flex-1 sm:w-56">
+            <input type="text" id="treeSearchInput" placeholder="Find relative by name..." class="w-full bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg pl-8 pr-3 py-2 focus:outline-none focus:border-amber-600">
+            <svg class="w-4 h-4 text-slate-500 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            <div id="treeSearchResults" class="hidden absolute top-full left-0 right-0 mt-1.5 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 overflow-hidden max-h-60 overflow-y-auto"></div>
           </div>
         </div>
       </div>
-
-      <!-- Tree Viewport -->
-      <div id="treeContainer">
-        <!-- Rendered by js/tree.js -->
-      </div>
-
-      <!-- Legend -->
-      <div class="mt-4 flex flex-wrap items-center justify-between text-[11px] text-slate-400 px-2 gap-2">
+      <div id="treeContainer"></div>
+      <div class="mt-4 flex flex-wrap items-center justify-between text-[11px] text-slate-500 px-2 gap-2">
         <div class="flex items-center gap-4">
-          <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></span> Generation 1 (Roots)</span>
-          <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span> Generation 2</span>
-          <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block"></span> Generation 3</span>
-          <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-purple-500 inline-block"></span> Generation 4</span>
+          <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-700 inline-block"></span> Generation 1</span>
+          <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-blue-700 inline-block"></span> Generation 2</span>
+          <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-slate-500 inline-block"></span> Generation 3+</span>
         </div>
-        <div class="flex items-center gap-3">
-          <span>Dashed Gold: Marriage</span>
-          <span>Flowing Curve: Lineage Descent</span>
-        </div>
+        <span>Dashed: Marriage &nbsp; Curve: Descent</span>
       </div>
     </div>
   </section>
 
-  <!-- ========================================================= -->
-  <!-- SECTION: GLOBAL DIASPORA & DIRECTORY -->
-  <!-- ========================================================= -->
-  <section id="diaspora" class="py-20 bg-slate-900/40 border-t border-slate-800/80">
+  <!-- DIRECTORY -->
+  <section id="directory" class="py-20 bg-[#0f172a] border-t border-slate-800">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
-        <div class="lg:col-span-5">
-          <span class="text-xs font-extrabold uppercase tracking-widest text-amber-400">Ab'Enju mu Nsi Yonna</span>
-          <h2 class="text-2xl sm:text-3xl font-bold font-serif-royal text-white mt-1 mb-3">Diaspora Distribution</h2>
-          <p class="text-xs sm:text-sm text-slate-400 mb-6 leading-relaxed">
-            Members of the Kintu lineage spanning from Bunyoro-Kitara to destinations worldwide.
-          </p>
-          <div class="space-y-3" id="diasporaStatsList"></div>
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
+        <div>
+          <span class="text-xs font-extrabold uppercase tracking-widest text-amber-600">Family Members</span>
+          <h2 class="text-2xl sm:text-3xl font-bold font-serif-royal text-white mt-1">Family Directory</h2>
+          <p class="text-xs text-slate-400" id="directoryTotalCount">0 Relatives Recorded</p>
         </div>
-
-        <div class="lg:col-span-7" id="directory">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
-            <div>
-              <h3 class="text-xl font-bold font-serif-royal text-white">Family Directory</h3>
-              <p class="text-xs text-slate-400" id="directoryTotalCount">0 Relatives Recorded</p>
-            </div>
-            
-            <div class="flex items-center gap-2">
-              <input type="text" id="directorySearch" placeholder="Search directory..." class="bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:border-amber-500 w-44">
-              <select id="directoryRoleFilter" class="bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:border-amber-500">
-                <option value="all">All Fields</option>
-                <option value="engineer">Engineering</option>
-                <option value="medical">Medical / Health</option>
-                <option value="tech">Technology</option>
-                <option value="law">Law & Policy</option>
-                <option value="student">Scholars / Youth</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[580px] overflow-y-auto pr-1" id="directoryGrid"></div>
+        <div class="flex items-center gap-2">
+          <input type="text" id="directorySearch" placeholder="Search directory..." class="bg-slate-800 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:border-amber-600 w-44">
+          <select id="directoryRoleFilter" class="bg-slate-800 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:border-amber-600">
+            <option value="all">All Fields</option>
+            <option value="engineer">Engineering</option>
+            <option value="medical">Medical</option>
+            <option value="tech">Technology</option>
+            <option value="teacher">Education</option>
+            <option value="student">Youth / Students</option>
+          </select>
         </div>
       </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" id="directoryGrid"></div>
     </div>
   </section>
 
-  <!-- ========================================================= -->
-  <!-- SECTION: LIVING ARCHIVES & PHOTO GALLERY -->
-  <!-- ========================================================= -->
+  <!-- PHOTO ARCHIVES -->
   <section id="archives" class="py-20 relative">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex flex-col sm:flex-row sm:items-end justify-between mb-10 gap-4">
         <div>
-          <span class="text-xs font-extrabold uppercase tracking-widest text-emerald-400">Ebiwandiiko n'Ebifaananyi</span>
+          <span class="text-xs font-extrabold uppercase tracking-widest text-slate-400">Ebiwandiiko n'Ebifaananyi</span>
           <h2 class="text-3xl sm:text-4xl font-bold font-serif-royal text-white mt-1">Living Photo Archives</h2>
-          <p class="text-xs sm:text-sm text-slate-400 mt-1 max-w-xl">
-            A preserved photographic record of ancestral portraits, homesteads, weddings, and family reunions.
-          </p>
+          <p class="text-xs sm:text-sm text-slate-400 mt-1 max-w-xl">A preserved record of ancestral portraits, homesteads, weddings, and family gatherings.</p>
         </div>
-
         <div class="flex flex-wrap items-center gap-2">
-          <button class="gallery-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 text-white transition" data-cat="all">All</button>
+          <button class="gallery-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-600 text-white transition" data-cat="all">All</button>
           <button class="gallery-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition" data-cat="Ancestral">Ancestral</button>
           <button class="gallery-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition" data-cat="Reunions">Reunions</button>
           <button class="gallery-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition" data-cat="Celebrations">Celebrations</button>
-          <button onclick="document.getElementById('addPhotoModal').classList.remove('hidden')" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-amber-400 border border-amber-500/40 hover:bg-amber-500 hover:text-slate-950 transition flex items-center gap-1.5">
+          <button onclick="document.getElementById('addPhotoModal').classList.remove('hidden')" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-amber-500 border border-slate-700 hover:bg-slate-700 transition flex items-center gap-1.5">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
             <span>Upload Photo</span>
           </button>
         </div>
       </div>
-
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" id="galleryGrid"></div>
     </div>
   </section>
 
-  <!-- ========================================================= -->
-  <!-- SECTION: IN MEMORIAM / MEMORIAL WALL -->
-  <!-- ========================================================= -->
-  <section id="memorial" class="py-20 bg-slate-900/80 border-y border-slate-800/80 relative">
+  <!-- IN MEMORIAM -->
+  <section id="memorial" class="py-20 bg-[#0f172a] border-y border-slate-800">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="text-center max-w-3xl mx-auto mb-14">
-        <span class="text-xs font-extrabold uppercase tracking-widest text-amber-400">Okwijuka Abakuru</span>
+      <div class="text-center max-w-3xl mx-auto mb-12">
+        <span class="text-xs font-extrabold uppercase tracking-widest text-amber-600">Okwijuka Abakuru</span>
         <h2 class="text-3xl sm:text-4xl font-bold font-serif-royal text-white mt-1 mb-3">In Memory of Departed Elders</h2>
-        <p class="text-xs sm:text-sm text-slate-400 leading-relaxed">
-          Honoring the memory of our departed forebears whose devotion to the Kintu family and Bunyoro-Kitara legacy continues to guide future generations.
-        </p>
+        <p class="text-xs sm:text-sm text-slate-400 leading-relaxed">Honoring the memory of our departed forebears whose devotion to the Kintu family and Bunyoro-Kitara legacy continues to guide future generations.</p>
       </div>
-
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="memorialGrid"></div>
     </div>
   </section>
 
-  <!-- ========================================================= -->
-  <!-- SECTION: REUNIONS & RSVP -->
-  <!-- ========================================================= -->
+  <!-- REUNION & RSVP -->
   <section id="reunions" class="py-20 relative">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="glass-panel-gold rounded-3xl p-8 sm:p-12 border border-amber-500/40 relative overflow-hidden">
+      <div class="bg-slate-800/50 rounded-3xl p-8 sm:p-12 border border-slate-700 relative overflow-hidden">
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
           <div class="lg:col-span-7">
-            <span class="text-xs font-extrabold uppercase tracking-widest text-amber-400">Family Gathering 2026</span>
-            <h2 class="text-3xl sm:text-4xl font-bold font-serif-royal text-white mt-1 mb-3">The Kintu Global Family Gathering</h2>
-            <p class="text-xs sm:text-sm text-amber-200/90 font-medium mb-4">
-              Theme: "Obumu: Honoring Our Bunyoro Roots, Connecting Our Tomorrow"
-            </p>
+            <span class="text-xs font-extrabold uppercase tracking-widest text-amber-600">Family Gathering 2026</span>
+            <h2 class="text-3xl sm:text-4xl font-bold font-serif-royal text-white mt-1 mb-3">The Kintu Family Gathering</h2>
+            <p class="text-xs sm:text-sm text-slate-400 font-medium mb-4 italic">"Obumu: Honoring Our Bunyoro Roots, Connecting Our Tomorrow"</p>
             <div class="space-y-2 text-xs text-slate-300 mb-6">
               <p class="flex items-center gap-2">
-                <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                <strong>Date:</strong> December 18 – 21, 2026
+                <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                <strong>Date:</strong> December 18 &ndash; 21, 2026
               </p>
               <p class="flex items-center gap-2">
-                <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                <strong>Venue:</strong> Bunyoro-Kitara Ancestral Grounds & Kampala, Uganda
+                <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                <strong>Venue:</strong> Bunyoro-Kitara Ancestral Grounds &amp; Kampala, Uganda
               </p>
               <p class="flex items-center gap-2">
-                <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                <strong>Highlights:</strong> Clan blessings, youth career symposium, banquet & family portrait
+                <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                <strong>Highlights:</strong> Clan blessings, youth symposium, banquet &amp; family portrait
               </p>
             </div>
-
-            <div class="p-4 rounded-xl glass-panel border border-slate-700/60 max-w-md mb-6">
+            <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-700 max-w-md mb-6">
               <div class="flex items-center justify-between text-xs font-semibold text-slate-300 mb-2">
                 <span>Confirmed RSVPs:</span>
-                <span class="text-amber-400 font-bold"><span id="rsvpConfirmedNumber">24</span> / 200 Target</span>
+                <span class="text-amber-500 font-bold"><span id="rsvpConfirmedNumber">0</span> / 200 Target</span>
               </div>
-              <div class="w-full bg-slate-800 rounded-full h-2">
-                <div class="bg-gradient-to-r from-amber-500 to-amber-400 h-2 rounded-full" style="width: 12%"></div>
+              <div class="w-full bg-slate-800 rounded-full h-1.5">
+                <div id="rsvpProgressBar" class="bg-amber-700 h-1.5 rounded-full" style="width:0%"></div>
               </div>
             </div>
           </div>
-
-          <div class="lg:col-span-5 glass-panel p-6 sm:p-8 rounded-2xl border border-amber-500/30">
+          <div class="lg:col-span-5 bg-slate-900/60 p-6 sm:p-8 rounded-2xl border border-slate-700">
             <h3 class="text-lg font-bold text-white mb-2">Confirm Your Attendance</h3>
             <p class="text-xs text-slate-400 mb-4">Register your family branch for catering and seating.</p>
-
             <form id="reunionRsvpForm" class="space-y-3">
               <div>
                 <label class="text-[11px] font-bold text-slate-300 block mb-1">Full Name</label>
-                <input type="text" id="rsvpName" required placeholder="e.g. David Kintu" class="w-full bg-slate-900 border border-slate-700 text-xs text-white rounded-xl px-3 py-2.5 focus:border-amber-500 focus:outline-none">
+                <input type="text" id="rsvpName" required placeholder="e.g. David Kintu" class="w-full bg-slate-800 border border-slate-700 text-xs text-white rounded-lg px-3 py-2.5 focus:border-amber-600 focus:outline-none">
               </div>
               <div class="grid grid-cols-2 gap-3">
                 <div>
                   <label class="text-[11px] font-bold text-slate-300 block mb-1">Branch / Location</label>
-                  <input type="text" id="rsvpBranch" placeholder="e.g. Bunyoro / Kampala" class="w-full bg-slate-900 border border-slate-700 text-xs text-white rounded-xl px-3 py-2.5 focus:border-amber-500 focus:outline-none">
+                  <input type="text" id="rsvpBranch" placeholder="e.g. Bunyoro" class="w-full bg-slate-800 border border-slate-700 text-xs text-white rounded-lg px-3 py-2.5 focus:border-amber-600 focus:outline-none">
                 </div>
                 <div>
                   <label class="text-[11px] font-bold text-slate-300 block mb-1">Guests</label>
-                  <input type="number" id="rsvpCount" min="1" max="10" value="1" class="w-full bg-slate-900 border border-slate-700 text-xs text-white rounded-xl px-3 py-2.5 focus:border-amber-500 focus:outline-none">
+                  <input type="number" id="rsvpCount" min="1" max="10" value="1" class="w-full bg-slate-800 border border-slate-700 text-xs text-white rounded-lg px-3 py-2.5 focus:border-amber-600 focus:outline-none">
                 </div>
               </div>
-              <button type="submit" class="w-full py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/20 transition">
-                Submit Attendance RSVP
+              <button type="submit" class="w-full py-3 rounded-lg bg-amber-700 hover:bg-amber-600 text-white font-bold text-xs shadow transition">
+                Submit RSVP
               </button>
             </form>
           </div>
@@ -485,268 +357,175 @@
     </div>
   </section>
 
-  <!-- ========================================================= -->
   <!-- FOOTER -->
-  <!-- ========================================================= -->
-  <footer class="mt-auto border-t border-slate-800 bg-[#080c14] py-12 text-slate-400 text-xs">
+  <footer class="mt-auto border-t border-slate-800 bg-[#0a0f1a] py-10 text-slate-500 text-xs">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
       <div class="flex items-center gap-3">
-        <div class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold">
+        <div class="w-8 h-8 rounded-lg bg-amber-900/30 text-amber-600 flex items-center justify-center font-bold">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
         </div>
         <div>
           <span class="text-white font-bold text-sm block font-serif-royal">The Kintu Family Heritage Portal</span>
-          <span class="text-[11px] text-slate-500">Bunyoro-Kitara Kingdom &bull; Western Uganda &bull; Worldwide Diaspora</span>
+          <span class="text-[11px] text-slate-600">Bunyoro-Kitara Kingdom &bull; Western Uganda</span>
         </div>
       </div>
-
       <div class="flex flex-wrap items-center gap-6 text-[11px]">
-        <a href="#origins" class="hover:text-amber-400">Origins</a>
-        <a href="#treeSection" class="hover:text-amber-400">Family Tree</a>
-        <a href="#directory" class="hover:text-amber-400">Directory</a>
-        <a href="#memorial" class="hover:text-amber-400">In Memoriam</a>
-        <button id="btnOpenCloudSettingsFooter" onclick="document.getElementById('btnOpenCloudSettings').click()" class="text-amber-400 hover:text-amber-300 transition flex items-center gap-1 font-semibold">
-          Database
-        </button>
-        <button id="btnResetDatabase" class="text-slate-500 hover:text-amber-400 transition underline">
-          Reset Data
-        </button>
+        <a href="#origins" class="hover:text-amber-500 transition">Origins</a>
+        <a href="#treeSection" class="hover:text-amber-500 transition">Family Tree</a>
+        <a href="#directory" class="hover:text-amber-500 transition">Directory</a>
+        <a href="#memorial" class="hover:text-amber-500 transition">In Memoriam</a>
+        <button id="btnResetDatabase" class="hover:text-amber-500 transition underline">Reset Cache</button>
       </div>
-
-      <div class="text-[11px] text-slate-500">
-        &copy; 2026 Kintu Family Lineage. Hosted on Vercel.
-      </div>
+      <div class="text-[11px] text-slate-600">&copy; 2026 Kintu Family Lineage. Hosted on Vercel.</div>
     </div>
   </footer>
 
-  <!-- ========================================================= -->
-  <!-- MODAL: ADD MEMBER TO FAMILY TREE (WIZARD) -->
-  <!-- ========================================================= -->
+  <!-- MODAL: ADD MEMBER (single form, no wizard) -->
   <div id="addMemberModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4 overflow-y-auto">
-    <div class="glass-panel border border-amber-500/40 rounded-2xl w-full max-w-xl p-6 sm:p-8 shadow-2xl relative">
-      <button id="btnCloseAddMember" class="absolute top-4 right-4 text-slate-400 hover:text-white text-xl font-bold">&times;</button>
-      
-      <div class="mb-6">
-        <span class="text-[11px] font-extrabold uppercase tracking-widest text-amber-400">Family Registration</span>
-        <h3 class="text-2xl font-bold font-serif-royal text-white">Join the Kintu Family Tree</h3>
-        <p class="text-xs text-slate-400 mt-1">Record your node or add an ancestor to preserve the Bunyoro-Kitara family tree.</p>
-      </div>
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-lg shadow-2xl relative">
+      <button id="btnCloseAddMember" class="absolute top-4 right-4 text-slate-400 hover:text-white text-xl font-bold leading-none">&times;</button>
+      <div class="p-6 sm:p-8">
+        <div class="mb-6">
+          <span class="text-[11px] font-extrabold uppercase tracking-widest text-amber-600">Family Registration</span>
+          <h3 class="text-2xl font-bold font-serif-royal text-white">Join the Kintu Family Tree</h3>
+          <p class="text-xs text-slate-400 mt-1">Fill in the details below to add yourself or a relative to the living family tree.</p>
+        </div>
 
-      <div class="flex items-center justify-between mb-8 text-xs font-bold">
-        <div class="flex items-center gap-2">
-          <span class="wizard-step-indicator w-6 h-6 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center">1</span>
-          <span class="hidden sm:inline text-slate-300">Personal Info</span>
-        </div>
-        <div class="h-0.5 flex-1 bg-slate-800 mx-3"></div>
-        <div class="flex items-center gap-2">
-          <span class="wizard-step-indicator w-6 h-6 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center">2</span>
-          <span class="hidden sm:inline text-slate-300">Lineage Link</span>
-        </div>
-        <div class="h-0.5 flex-1 bg-slate-800 mx-3"></div>
-        <div class="flex items-center gap-2">
-          <span class="wizard-step-indicator w-6 h-6 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center">3</span>
-          <span class="hidden sm:inline text-slate-300">Bio & Location</span>
-        </div>
-        <div class="h-0.5 flex-1 bg-slate-800 mx-3"></div>
-        <div class="flex items-center gap-2">
-          <span class="wizard-step-indicator w-6 h-6 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center">4</span>
-          <span class="hidden sm:inline text-slate-300">Verify PIN</span>
-        </div>
-      </div>
-
-      <form id="addMemberForm">
-        <!-- STEP 1: Personal Info -->
-        <div class="wizard-step-pane" id="wizardStep1">
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+        <form id="addMemberForm" class="space-y-4">
+          <!-- Name Row -->
+          <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="text-xs font-bold text-slate-300 block mb-1">First Name *</label>
-              <input type="text" id="regFirstName" required placeholder="e.g. David" class="w-full bg-slate-900 border border-slate-700 text-xs text-white rounded-xl px-3 py-2.5 focus:border-amber-500 focus:outline-none">
+              <input type="text" id="regFirstName" required placeholder="e.g. David" class="w-full bg-slate-900 border border-slate-700 text-xs text-white rounded-lg px-3 py-2.5 focus:border-amber-600 focus:outline-none">
             </div>
             <div>
-              <label class="text-xs font-bold text-slate-300 block mb-1">Surname / Last Name *</label>
-              <input type="text" id="regLastName" required placeholder="e.g. Kintu" class="w-full bg-slate-900 border border-slate-700 text-xs text-white rounded-xl px-3 py-2.5 focus:border-amber-500 focus:outline-none">
+              <label class="text-xs font-bold text-slate-300 block mb-1">Surname *</label>
+              <input type="text" id="regLastName" required placeholder="e.g. Kintu" class="w-full bg-slate-900 border border-slate-700 text-xs text-white rounded-lg px-3 py-2.5 focus:border-amber-600 focus:outline-none">
             </div>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+          <!-- Personal Details Row -->
+          <div class="grid grid-cols-3 gap-4">
             <div>
-              <label class="text-xs font-bold text-slate-300 block mb-1">Empaako (Praise Name)</label>
-              <select id="regEmpaako" class="w-full bg-slate-900 border border-slate-700 text-xs text-white rounded-xl px-3 py-2.5 focus:border-amber-500 focus:outline-none">
-                <option value="">None / Custom</option>
-                <option value="Abwooli">Abwooli</option>
-                <option value="Amooti">Amooti</option>
-                <option value="Akiiki">Akiiki</option>
-                <option value="Apuuli">Apuuli</option>
-                <option value="Araali">Araali</option>
-                <option value="Atwoki">Atwoki</option>
-                <option value="Adyeri">Adyeri</option>
-                <option value="Bbala">Bbala</option>
-                <option value="Acaali">Acaali</option>
-                <option value="Atenyi">Atenyi</option>
-                <option value="Okali">Okali</option>
+              <label class="text-xs font-bold text-slate-300 block mb-1">Empaako</label>
+              <select id="regEmpaako" class="w-full bg-slate-900 border border-slate-700 text-xs text-white rounded-lg px-3 py-2.5 focus:border-amber-600 focus:outline-none">
+                <option value="">None</option>
+                <option>Abwooli</option><option>Amooti</option><option>Akiiki</option>
+                <option>Apuuli</option><option>Araali</option><option>Atwoki</option>
+                <option>Adyeri</option><option>Bbala</option><option>Acaali</option>
+                <option>Atenyi</option><option>Okali</option>
               </select>
             </div>
             <div>
               <label class="text-xs font-bold text-slate-300 block mb-1">Gender</label>
-              <select id="regGender" class="w-full bg-slate-900 border border-slate-700 text-xs text-white rounded-xl px-3 py-2.5 focus:border-amber-500 focus:outline-none">
+              <select id="regGender" class="w-full bg-slate-900 border border-slate-700 text-xs text-white rounded-lg px-3 py-2.5 focus:border-amber-600 focus:outline-none">
                 <option value="male">Male</option>
                 <option value="female">Female</option>
               </select>
             </div>
             <div>
-              <label class="text-xs font-bold text-slate-300 block mb-1">Year of Birth *</label>
-              <input type="number" id="regBirthYear" required min="1850" max="2026" value="1995" class="w-full bg-slate-900 border border-slate-700 text-xs text-white rounded-xl px-3 py-2.5 focus:border-amber-500 focus:outline-none">
+              <label class="text-xs font-bold text-slate-300 block mb-1">Birth Year *</label>
+              <input type="number" id="regBirthYear" required min="1850" max="2026" value="1990" class="w-full bg-slate-900 border border-slate-700 text-xs text-white rounded-lg px-3 py-2.5 focus:border-amber-600 focus:outline-none">
             </div>
           </div>
 
-          <!-- Deceased / Memorial Checkbox -->
-          <div class="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 mb-6">
+          <!-- Deceased -->
+          <div class="p-3.5 rounded-xl bg-slate-900 border border-slate-700">
             <label class="flex items-center gap-2.5 text-xs text-slate-300 cursor-pointer">
-              <input type="checkbox" id="regIsDeceased" class="rounded border-slate-700 text-amber-500 focus:ring-0">
+              <input type="checkbox" id="regIsDeceased" class="rounded border-slate-700 text-amber-600 focus:ring-0">
               <span class="font-semibold">This relative is deceased (Add to In Memoriam Wall)</span>
             </label>
             <div id="deathYearField" class="hidden mt-3 pt-3 border-t border-slate-800">
               <label class="text-xs font-bold text-slate-300 block mb-1">Year of Passing</label>
-              <input type="number" id="regDeathYear" min="1850" max="2026" placeholder="e.g. 1998" class="w-44 bg-slate-900 border border-slate-700 text-xs text-white rounded-xl px-3 py-2 focus:border-amber-500 focus:outline-none">
+              <input type="number" id="regDeathYear" min="1850" max="2026" placeholder="e.g. 1998" class="w-36 bg-slate-900 border border-slate-700 text-xs text-white rounded-lg px-3 py-2 focus:border-amber-600 focus:outline-none">
             </div>
           </div>
 
-          <div class="flex justify-end">
-            <button type="button" class="btn-wizard-next px-6 py-2.5 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs hover:bg-amber-400 transition">
-              Next: Lineage Link &rarr;
-            </button>
-          </div>
-        </div>
-
-        <!-- STEP 2: Lineage Link -->
-        <div class="wizard-step-pane hidden" id="wizardStep2">
-          <div class="mb-4">
-            <label class="text-xs font-bold text-slate-300 block mb-1">Parent in the Tree</label>
-            <select id="regParent" class="w-full bg-slate-900 border border-slate-700 text-xs text-white rounded-xl px-3 py-2.5 focus:border-amber-500 focus:outline-none">
-              <!-- Dynamically populated -->
-            </select>
-            <p id="regParentNotice" class="text-[11px] text-slate-400 mt-1.5"></p>
+          <!-- Lineage Links -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="text-xs font-bold text-slate-300 block mb-1">Parent in Tree</label>
+              <select id="regParent" class="w-full bg-slate-900 border border-slate-700 text-xs text-white rounded-lg px-3 py-2.5 focus:border-amber-600 focus:outline-none"></select>
+              <p id="regParentNotice" class="text-[11px] text-slate-500 mt-1"></p>
+            </div>
+            <div>
+              <label class="text-xs font-bold text-slate-300 block mb-1">Spouse / Partner in Tree</label>
+              <select id="regSpouse" class="w-full bg-slate-900 border border-slate-700 text-xs text-white rounded-lg px-3 py-2.5 focus:border-amber-600 focus:outline-none"></select>
+            </div>
           </div>
 
-          <div class="mb-4">
-            <label class="text-xs font-bold text-slate-300 block mb-1">Spouse / Partner in the Tree (Optional)</label>
-            <select id="regSpouse" class="w-full bg-slate-900 border border-slate-700 text-xs text-white rounded-xl px-3 py-2.5 focus:border-amber-500 focus:outline-none">
-              <!-- Dynamically populated -->
-            </select>
-            <p class="text-[11px] text-slate-400 mt-1">If this member is married to someone already in the tree, select their spouse.</p>
-          </div>
-
-          <div class="mb-6">
-            <label class="text-xs font-bold text-slate-300 block mb-1">Lineage Branch / Location</label>
-            <input type="text" id="regBranch" placeholder="e.g. Bunyoro Main Lineage, Kampala Branch, UK Branch" class="w-full bg-slate-900 border border-slate-700 text-xs text-white rounded-xl px-3 py-2.5 focus:border-amber-500 focus:outline-none">
-          </div>
-
-          <div class="flex justify-between">
-            <button type="button" class="btn-wizard-prev px-5 py-2.5 rounded-xl glass-panel text-slate-300 text-xs font-semibold">
-              &larr; Back
-            </button>
-            <button type="button" class="btn-wizard-next px-6 py-2.5 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs hover:bg-amber-400 transition">
-              Next: Location & Bio &rarr;
-            </button>
-          </div>
-        </div>
-
-        <!-- STEP 3: Bio & Location -->
-        <div class="wizard-step-pane hidden" id="wizardStep3">
-          <div class="grid grid-cols-2 gap-4 mb-4">
+          <!-- Branch & Location -->
+          <div class="grid grid-cols-3 gap-4">
+            <div>
+              <label class="text-xs font-bold text-slate-300 block mb-1">Branch / Lineage</label>
+              <input type="text" id="regBranch" placeholder="e.g. Bunyoro Main" class="w-full bg-slate-900 border border-slate-700 text-xs text-white rounded-lg px-3 py-2.5 focus:border-amber-600 focus:outline-none">
+            </div>
             <div>
               <label class="text-xs font-bold text-slate-300 block mb-1">City / Town</label>
-              <input type="text" id="regCity" placeholder="e.g. Hoima, Masindi, Kampala" class="w-full bg-slate-900 border border-slate-700 text-xs text-white rounded-xl px-3 py-2.5 focus:border-amber-500 focus:outline-none">
+              <input type="text" id="regCity" placeholder="e.g. Hoima" class="w-full bg-slate-900 border border-slate-700 text-xs text-white rounded-lg px-3 py-2.5 focus:border-amber-600 focus:outline-none">
             </div>
             <div>
               <label class="text-xs font-bold text-slate-300 block mb-1">Country</label>
-              <input type="text" id="regCountry" placeholder="e.g. Uganda, United Kingdom" class="w-full bg-slate-900 border border-slate-700 text-xs text-white rounded-xl px-3 py-2.5 focus:border-amber-500 focus:outline-none">
+              <input type="text" id="regCountry" placeholder="e.g. Uganda" class="w-full bg-slate-900 border border-slate-700 text-xs text-white rounded-lg px-3 py-2.5 focus:border-amber-600 focus:outline-none">
             </div>
           </div>
 
-          <div class="mb-4">
-            <label class="text-xs font-bold text-slate-300 block mb-1">Occupation / Calling</label>
-            <input type="text" id="regOccupation" placeholder="e.g. Agriculturalist, Teacher, Software Engineer" class="w-full bg-slate-900 border border-slate-700 text-xs text-white rounded-xl px-3 py-2.5 focus:border-amber-500 focus:outline-none">
+          <!-- Occupation & Bio -->
+          <div>
+            <label class="text-xs font-bold text-slate-300 block mb-1">Occupation</label>
+            <input type="text" id="regOccupation" placeholder="e.g. Teacher, Engineer, Farmer..." class="w-full bg-slate-900 border border-slate-700 text-xs text-white rounded-lg px-3 py-2.5 focus:border-amber-600 focus:outline-none">
           </div>
-
-          <div class="mb-4">
-            <label class="text-xs font-bold text-slate-300 block mb-1">Short Biography / Life Notes</label>
-            <textarea id="regBio" rows="2" placeholder="Brief biographical notes, family achievements, or memories..." class="w-full bg-slate-900 border border-slate-700 text-xs text-white rounded-xl px-3 py-2 focus:border-amber-500 focus:outline-none"></textarea>
+          <div>
+            <label class="text-xs font-bold text-slate-300 block mb-1">Short Biography</label>
+            <textarea id="regBio" rows="2" placeholder="Brief notes about this person..." class="w-full bg-slate-900 border border-slate-700 text-xs text-white rounded-lg px-3 py-2 focus:border-amber-600 focus:outline-none"></textarea>
           </div>
-
-          <div class="mb-6">
+          <div>
             <label class="text-xs font-bold text-slate-300 block mb-1">Photo URL (Optional)</label>
-            <input type="url" id="regPhotoUrl" placeholder="https://... (Leave blank to use initials)" class="w-full bg-slate-900 border border-slate-700 text-xs text-white rounded-xl px-3 py-2.5 focus:border-amber-500 focus:outline-none">
+            <input type="url" id="regPhotoUrl" placeholder="https://... (Leave blank for initials)" class="w-full bg-slate-900 border border-slate-700 text-xs text-white rounded-lg px-3 py-2.5 focus:border-amber-600 focus:outline-none">
           </div>
 
-          <div class="flex justify-between">
-            <button type="button" class="btn-wizard-prev px-5 py-2.5 rounded-xl glass-panel text-slate-300 text-xs font-semibold">
-              &larr; Back
-            </button>
-            <button type="button" class="btn-wizard-next px-6 py-2.5 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs hover:bg-amber-400 transition">
-              Next: Passcode &rarr;
-            </button>
-          </div>
-        </div>
-
-        <!-- STEP 4: Passcode -->
-        <div class="wizard-step-pane hidden" id="wizardStep4">
-          <div class="p-4 rounded-xl glass-panel-gold border border-amber-500/30 mb-5">
-            <span class="text-xs font-bold text-amber-300 block mb-1">Family Tree Security</span>
-            <p class="text-xs text-slate-300 leading-relaxed">
-              To keep our family tree authentic, entries require our shared family passcode. (Default: <code class="text-amber-400 font-bold">KINTU2026</code>).
-            </p>
+          <!-- Passcode -->
+          <div class="p-3.5 rounded-xl bg-slate-900 border border-slate-700">
+            <label class="text-xs font-bold text-slate-300 block mb-1">Family Passcode *</label>
+            <input type="text" id="regPin" required placeholder="KINTU2026" value="KINTU2026" class="w-full bg-slate-900 border border-slate-600 text-xs text-white rounded-lg px-3 py-2.5 focus:border-amber-600 focus:outline-none tracking-widest font-mono font-bold text-center">
+            <p class="text-[11px] text-slate-500 mt-1 text-center">Default passcode: KINTU2026</p>
           </div>
 
-          <div class="mb-6">
-            <label class="text-xs font-bold text-slate-300 block mb-1">Enter Family Passcode *</label>
-            <input type="text" id="regPin" required placeholder="KINTU2026" value="KINTU2026" class="w-full bg-slate-900 border border-slate-700 text-xs text-white rounded-xl px-3 py-3 focus:border-amber-500 focus:outline-none tracking-widest font-mono font-bold text-center">
-          </div>
-
-          <div class="flex justify-between">
-            <button type="button" class="btn-wizard-prev px-5 py-2.5 rounded-xl glass-panel text-slate-300 text-xs font-semibold">
-              &larr; Back
-            </button>
-            <button type="submit" class="px-7 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-extrabold text-xs shadow-lg shadow-amber-500/25 hover:scale-[1.02] transition">
-              Confirm & Add to Tree
-            </button>
-          </div>
-        </div>
-      </form>
+          <button type="submit" class="w-full py-3 rounded-xl bg-amber-700 hover:bg-amber-600 text-white font-extrabold text-sm shadow-lg transition">
+            Add to Family Tree
+          </button>
+        </form>
+      </div>
     </div>
   </div>
 
-  <!-- ========================================================= -->
-  <!-- MODAL: UPLOAD PHOTO TO ARCHIVE -->
-  <!-- ========================================================= -->
+  <!-- MODAL: UPLOAD PHOTO -->
   <div id="addPhotoModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4 overflow-y-auto">
-    <div class="glass-panel border border-emerald-500/40 rounded-2xl w-full max-w-md p-6 sm:p-8 shadow-2xl relative">
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-md p-6 sm:p-8 shadow-2xl relative">
       <button onclick="document.getElementById('addPhotoModal').classList.add('hidden')" class="absolute top-4 right-4 text-slate-400 hover:text-white text-xl font-bold">&times;</button>
-      
       <div class="mb-5">
-        <span class="text-[11px] font-extrabold uppercase tracking-widest text-emerald-400">Living Archives</span>
-        <h3 class="text-xl font-bold font-serif-royal text-white">Contribute a Photo Memory</h3>
-        <p class="text-xs text-slate-400 mt-1">Add historical portraits, ancestral homesteads, or reunion photographs.</p>
+        <span class="text-[11px] font-extrabold uppercase tracking-widest text-slate-400">Living Archives</span>
+        <h3 class="text-xl font-bold font-serif-royal text-white">Contribute a Photo</h3>
+        <p class="text-xs text-slate-400 mt-1">Add historical portraits, homesteads, or reunion photographs.</p>
       </div>
-
       <form id="addPhotoForm" class="space-y-4">
         <div>
           <label class="text-xs font-bold text-slate-300 block mb-1">Photo Title *</label>
-          <input type="text" id="photoTitle" required placeholder="e.g. Bunyoro Homestead Gathering" class="w-full bg-slate-900 border border-slate-700 text-xs text-white rounded-xl px-3 py-2.5 focus:border-emerald-500 focus:outline-none">
+          <input type="text" id="photoTitle" required placeholder="e.g. Bunyoro Homestead Gathering" class="w-full bg-slate-900 border border-slate-700 text-xs text-white rounded-lg px-3 py-2.5 focus:border-amber-600 focus:outline-none">
         </div>
         <div>
           <label class="text-xs font-bold text-slate-300 block mb-1">Image URL *</label>
-          <input type="url" id="photoUrl" required placeholder="https://..." class="w-full bg-slate-900 border border-slate-700 text-xs text-white rounded-xl px-3 py-2.5 focus:border-emerald-500 focus:outline-none">
-          <p class="text-[11px] text-slate-500 mt-0.5">Paste a direct link to an image (e.g. Imgur, Google Drive, Cloudinary, etc.)</p>
+          <input type="url" id="photoUrl" required placeholder="https://..." class="w-full bg-slate-900 border border-slate-700 text-xs text-white rounded-lg px-3 py-2.5 focus:border-amber-600 focus:outline-none">
+          <p class="text-[11px] text-slate-500 mt-0.5">Paste a direct image link (Imgur, Google Drive, Cloudinary, etc.)</p>
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="text-xs font-bold text-slate-300 block mb-1">Year</label>
-            <input type="text" id="photoYear" placeholder="e.g. 1985" class="w-full bg-slate-900 border border-slate-700 text-xs text-white rounded-xl px-3 py-2.5 focus:border-emerald-500 focus:outline-none">
+            <input type="text" id="photoYear" placeholder="e.g. 1985" class="w-full bg-slate-900 border border-slate-700 text-xs text-white rounded-lg px-3 py-2.5 focus:border-amber-600 focus:outline-none">
           </div>
           <div>
             <label class="text-xs font-bold text-slate-300 block mb-1">Category</label>
-            <select id="photoCategory" class="w-full bg-slate-900 border border-slate-700 text-xs text-white rounded-xl px-3 py-2.5 focus:border-emerald-500 focus:outline-none">
+            <select id="photoCategory" class="w-full bg-slate-900 border border-slate-700 text-xs text-white rounded-lg px-3 py-2.5 focus:border-amber-600 focus:outline-none">
               <option value="Ancestral">Ancestral</option>
               <option value="Reunions">Reunions</option>
               <option value="Celebrations">Celebrations</option>
@@ -756,128 +535,56 @@
         </div>
         <div>
           <label class="text-xs font-bold text-slate-300 block mb-1">Caption / Story</label>
-          <textarea id="photoCaption" rows="2" placeholder="Tell the story behind this photo..." class="w-full bg-slate-900 border border-slate-700 text-xs text-white rounded-xl px-3 py-2 focus:border-emerald-500 focus:outline-none"></textarea>
+          <textarea id="photoCaption" rows="2" placeholder="Tell the story behind this photo..." class="w-full bg-slate-900 border border-slate-700 text-xs text-white rounded-lg px-3 py-2 focus:border-amber-600 focus:outline-none"></textarea>
         </div>
-        <button type="submit" class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg transition">
+        <button type="submit" class="w-full py-3 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs shadow transition">
           Save Photo to Archive
         </button>
       </form>
     </div>
   </div>
 
-  <!-- ========================================================= -->
-  <!-- MODAL: MEMBER FULL PROFILE -->
-  <!-- ========================================================= -->
+  <!-- MODAL: MEMBER PROFILE -->
   <div id="memberProfileModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4 overflow-y-auto">
-    <div class="glass-panel border border-slate-700 rounded-2xl w-full max-w-lg p-6 sm:p-8 shadow-2xl relative">
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-lg p-6 sm:p-8 shadow-2xl relative">
       <button onclick="document.getElementById('memberProfileModal').classList.add('hidden')" class="absolute top-4 right-4 text-slate-400 hover:text-white text-xl font-bold">&times;</button>
-      
       <div class="flex items-start gap-4 mb-6">
-        <img id="modalMemberPhoto" src="" class="w-20 h-20 rounded-2xl object-cover border-2 border-amber-500/60 shadow-lg hidden">
-        <div id="modalMemberPhotoFallback" class="w-20 h-20 rounded-2xl bg-slate-800 border-2 border-slate-700 flex items-center justify-center text-slate-300 font-bold text-2xl shadow-lg"></div>
+        <img id="modalMemberPhoto" src="" class="w-20 h-20 rounded-2xl object-cover border-2 border-slate-600 shadow-lg hidden">
+        <div id="modalMemberPhotoFallback" class="w-20 h-20 rounded-2xl bg-slate-700 border-2 border-slate-600 flex items-center justify-center text-slate-300 font-bold text-2xl shadow-lg"></div>
         <div>
-          <span id="modalMemberGenBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-md badge-gold mb-1 inline-block"></span>
+          <span id="modalMemberGenBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-900/20 border border-amber-800/30 text-amber-500 mb-1 inline-block"></span>
           <h3 id="modalMemberName" class="text-xl font-bold text-white font-serif-royal"></h3>
-          <p id="modalMemberTradName" class="text-xs text-amber-400 font-semibold"></p>
+          <p id="modalMemberTradName" class="text-xs text-amber-500 font-semibold"></p>
           <p id="modalMemberOccupation" class="text-xs text-slate-300 font-medium mt-0.5"></p>
           <p id="modalMemberDates" class="text-[11px] text-slate-400 mt-1"></p>
           <p id="modalMemberLocation" class="text-[11px] text-slate-400"></p>
         </div>
       </div>
-
       <div class="mb-5">
-        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Biography & Life Story</h4>
+        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Biography</h4>
         <p id="modalMemberBio" class="text-xs text-slate-300 leading-relaxed"></p>
       </div>
-
       <div class="pt-4 border-t border-slate-700/60">
-        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Direct Lineage & Connections</h4>
+        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Family Connections</h4>
         <div id="modalMemberRelations"></div>
       </div>
     </div>
   </div>
 
-  <!-- ========================================================= -->
-  <!-- MODAL: PHOTO GALLERY LIGHTBOX -->
-  <!-- ========================================================= -->
+  <!-- MODAL: PHOTO LIGHTBOX -->
   <div id="lightboxModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-950/90 backdrop-blur-md p-4">
     <div class="relative max-w-3xl w-full">
       <button onclick="document.getElementById('lightboxModal').classList.add('hidden')" class="absolute -top-10 right-0 text-white text-2xl font-bold">&times;</button>
       <img id="lightboxImg" src="" class="w-full rounded-2xl max-h-[75vh] object-cover shadow-2xl border border-slate-700">
-      <div class="mt-3 p-3 glass-panel rounded-xl flex items-center justify-between">
+      <div class="mt-3 p-3 bg-slate-900/80 rounded-xl flex items-center justify-between">
         <div>
           <h4 id="lightboxTitle" class="text-sm font-bold text-white"></h4>
           <p id="lightboxCaption" class="text-xs text-slate-300"></p>
         </div>
-        <span id="lightboxYear" class="text-xs font-bold text-amber-400 px-2.5 py-1 rounded-full badge-gold"></span>
+        <span id="lightboxYear" class="text-xs font-bold text-amber-500 px-2.5 py-1 rounded-full bg-amber-900/20 border border-amber-800/30"></span>
       </div>
     </div>
   </div>
-
-  <!-- ========================================================= -->
-  <!-- MODAL: CLOUD DATABASE SETTINGS (SUPABASE / POSTGRES) -->
-  <!-- ========================================================= -->
-  <div id="cloudSettingsModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4 overflow-y-auto">
-    <div class="glass-panel border border-amber-500/40 rounded-2xl w-full max-w-lg p-6 sm:p-8 shadow-2xl relative">
-      <button id="btnCloseCloudSettings" class="absolute top-4 right-4 text-slate-400 hover:text-white text-xl font-bold">&times;</button>
-      
-      <div class="mb-5">
-        <div class="flex items-center justify-between mb-2">
-          <span class="text-[11px] font-extrabold uppercase tracking-widest text-amber-400">Database Setup</span>
-          <div id="cloudStatusBadge"></div>
-        </div>
-        <h3 class="text-2xl font-bold font-serif-royal text-white">Cloud Database Synchronization</h3>
-        <p class="text-xs text-slate-300 mt-2 leading-relaxed">
-          The website currently preserves all data in <strong>Persistent Local Storage</strong>. Anyone visiting can add relatives immediately without any setup.
-        </p>
-        <p class="text-xs text-slate-400 mt-1 leading-relaxed">
-          To synchronize additions live between relatives across different devices and countries in real-time, connect a free <strong>Supabase (PostgreSQL)</strong> database:
-        </p>
-      </div>
-
-      <form id="cloudSettingsForm" class="space-y-4">
-        <div>
-          <label class="text-xs font-bold text-slate-300 block mb-1">Supabase Project URL</label>
-          <input type="url" id="cloudSupabaseUrl" placeholder="https://your-project.supabase.co" class="w-full bg-slate-900 border border-slate-700 text-xs text-white rounded-xl px-3 py-2.5 focus:border-amber-500 focus:outline-none">
-        </div>
-
-        <div>
-          <label class="text-xs font-bold text-slate-300 block mb-1">Supabase Anon Public API Key</label>
-          <input type="text" id="cloudSupabaseKey" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." class="w-full bg-slate-900 border border-slate-700 text-xs text-white rounded-xl px-3 py-2.5 focus:border-amber-500 focus:outline-none">
-        </div>
-
-        <div class="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 text-[11px] text-slate-400">
-          Instructions for setting up Supabase are detailed in your project <code class="text-amber-300">README.md</code>.
-        </div>
-
-        <div class="flex items-center justify-between pt-2">
-          <button type="button" onclick="document.getElementById('cloudSupabaseUrl').value=''; document.getElementById('cloudSupabaseKey').value=''; document.getElementById('cloudSettingsForm').dispatchEvent(new Event('submit'));" class="text-xs text-slate-400 hover:text-amber-400 underline">
-            Use Local Storage Only
-          </button>
-          <button type="submit" class="px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/20 transition">
-            Save & Connect
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <script>
-    // Toggle death year field when deceased checkbox is clicked
-    document.addEventListener('DOMContentLoaded', () => {
-      const decCheck = document.getElementById('regIsDeceased');
-      const deathDiv = document.getElementById('deathYearField');
-      if (decCheck && deathDiv) {
-        decCheck.addEventListener('change', () => {
-          if (decCheck.checked) {
-            deathDiv.classList.remove('hidden');
-          } else {
-            deathDiv.classList.add('hidden');
-          }
-        });
-      }
-    });
-  </script>
 
   <!-- Scripts -->
   <script src="js/data.js"></script>
