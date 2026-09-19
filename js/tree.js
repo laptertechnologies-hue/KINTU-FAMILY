@@ -390,7 +390,7 @@ class FamilyTreeEngine {
         <div class="min-w-0 flex-1">
           <h4 class="text-sm font-semibold text-white truncate leading-tight">${member.firstName} ${member.lastName}</h4>
           ${empaakoOrTrad ? `<p class="text-[11px] text-amber-400 font-medium truncate">"${empaakoOrTrad}"</p>` : ''}
-          <p class="text-[11px] text-slate-400 truncate mt-0.5">${member.occupation || 'Family Member'}</p>
+          <p class="text-[11px] text-slate-400 truncate mt-0.5">${member.location || 'Bunyoro-Kitara'}</p>
         </div>
       </div>
       <div class="mt-2.5 pt-2 border-t border-slate-700/50 flex items-center justify-between">

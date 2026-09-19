@@ -244,15 +244,14 @@
           <h2 class="text-2xl sm:text-3xl font-bold font-serif-royal text-white mt-1">Family Directory</h2>
           <p class="text-xs text-slate-400" id="directoryTotalCount">0 Relatives Recorded</p>
         </div>
-        <div class="flex items-center gap-2">
-          <input type="text" id="directorySearch" placeholder="Search directory..." class="bg-slate-800 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:border-amber-600 w-44">
-          <select id="directoryRoleFilter" class="bg-slate-800 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:border-amber-600">
-            <option value="all">All Fields</option>
-            <option value="engineer">Engineering</option>
-            <option value="medical">Medical</option>
-            <option value="tech">Technology</option>
-            <option value="teacher">Education</option>
-            <option value="student">Youth / Students</option>
+        <div class="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full sm:w-auto">
+          <input type="text" id="directorySearch" placeholder="Search by name, Empaako, address..." class="bg-slate-800 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2.5 focus:outline-none focus:border-amber-600 w-full sm:w-60">
+          <select id="directoryRoleFilter" class="bg-slate-800 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2.5 focus:outline-none focus:border-amber-600 shrink-0">
+            <option value="all">All Generations</option>
+            <option value="1">Gen 1 (Roots)</option>
+            <option value="2">Gen 2 (Elders)</option>
+            <option value="3">Gen 3 (Children)</option>
+            <option value="4">Gen 4 (Youth)</option>
           </select>
         </div>
       </div>
@@ -380,35 +379,71 @@
     </div>
   </footer>
 
-  <!-- MODAL: ADD MEMBER (single form, no wizard) -->
-  <div id="addMemberModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4 overflow-y-auto">
-    <div class="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-lg shadow-2xl relative">
-      <button id="btnCloseAddMember" class="absolute top-4 right-4 text-slate-400 hover:text-white text-xl font-bold leading-none">&times;</button>
-      <div class="p-6 sm:p-8">
-        <div class="mb-6">
-          <span class="text-[11px] font-extrabold uppercase tracking-widest text-amber-600">Family Registration</span>
-          <h3 class="text-2xl font-bold font-serif-royal text-white">Join the Kintu Family Tree</h3>
-          <p class="text-xs text-slate-400 mt-1">Fill in the details below to add yourself or a relative to the living family tree.</p>
+  <!-- MODAL: ADD MEMBER (single form, redesigned, simplified, mobile-first) -->
+  <div id="addMemberModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-lg shadow-2xl relative my-auto max-h-[92vh] flex flex-col overflow-hidden">
+      <!-- Modal Header -->
+      <div class="px-5 py-4 sm:px-6 sm:py-5 border-b border-slate-800 flex items-center justify-between shrink-0 bg-slate-900/90">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-500 flex items-center justify-center shrink-0">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
+          </div>
+          <div>
+            <h3 class="text-lg sm:text-xl font-bold font-serif-royal text-white">Join the Family Tree</h3>
+            <p class="text-[11px] text-slate-400">Add yourself or a relative to the Kintu lineage</p>
+          </div>
         </div>
+        <button id="btnCloseAddMember" type="button" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center text-lg font-bold transition">&times;</button>
+      </div>
 
+      <!-- Modal Body (Scrollable) -->
+      <div class="p-5 sm:p-6 overflow-y-auto space-y-4">
         <form id="addMemberForm" class="space-y-4">
-          <!-- Name Row -->
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="text-xs font-bold text-slate-300 block mb-1">First Name *</label>
-              <input type="text" id="regFirstName" required placeholder="e.g. David" class="w-full bg-slate-900 border border-slate-700 text-xs text-white rounded-lg px-3 py-2.5 focus:border-amber-600 focus:outline-none">
-            </div>
-            <div>
-              <label class="text-xs font-bold text-slate-300 block mb-1">Surname *</label>
-              <input type="text" id="regLastName" required placeholder="e.g. Kintu" class="w-full bg-slate-900 border border-slate-700 text-xs text-white rounded-lg px-3 py-2.5 focus:border-amber-600 focus:outline-none">
+          
+          <!-- Photo File Upload with Live Preview -->
+          <div class="p-4 rounded-xl bg-slate-800/60 border border-slate-700/70">
+            <label class="text-xs font-bold text-slate-200 block mb-2">Member Photo (Optional)</label>
+            <div class="flex items-center gap-4">
+              <div id="photoPreviewContainer" class="relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-slate-800 border-2 border-dashed border-slate-600 flex items-center justify-center overflow-hidden shrink-0 group">
+                <img id="regPhotoPreview" src="" class="w-full h-full object-cover hidden" alt="Preview">
+                <div id="regPhotoPlaceholder" class="flex flex-col items-center justify-center text-slate-400">
+                  <svg class="w-6 h-6 sm:w-7 sm:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                  <span class="text-[9px] mt-0.5 font-medium">Photo</span>
+                </div>
+              </div>
+              <div class="flex-1 min-w-0">
+                <input type="file" id="regPhotoFileInput" accept="image/*" class="hidden">
+                <div class="flex flex-wrap items-center gap-2 mb-1">
+                  <button type="button" id="btnChoosePhoto" class="px-3 py-1.5 rounded-lg bg-amber-700 hover:bg-amber-600 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    <span>Upload Picture</span>
+                  </button>
+                  <button type="button" id="btnRemovePhoto" class="hidden px-2.5 py-1.5 rounded-lg bg-slate-700 hover:bg-red-900/60 hover:text-red-300 text-slate-300 text-xs font-medium transition">
+                    Remove
+                  </button>
+                </div>
+                <p class="text-[11px] text-slate-400">Upload a picture from your phone or PC</p>
+              </div>
             </div>
           </div>
 
-          <!-- Personal Details Row -->
-          <div class="grid grid-cols-3 gap-4">
+          <!-- Name Row -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <div>
+              <label class="text-xs font-bold text-slate-300 block mb-1">First Name *</label>
+              <input type="text" id="regFirstName" required placeholder="e.g. David" class="w-full bg-slate-950/80 border border-slate-700 text-xs sm:text-sm text-white rounded-xl px-3.5 py-2.5 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 transition">
+            </div>
+            <div>
+              <label class="text-xs font-bold text-slate-300 block mb-1">Surname *</label>
+              <input type="text" id="regLastName" required placeholder="e.g. Kintu" class="w-full bg-slate-950/80 border border-slate-700 text-xs sm:text-sm text-white rounded-xl px-3.5 py-2.5 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 transition">
+            </div>
+          </div>
+
+          <!-- Personal Details: Empaako, Gender, Birth Year -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
             <div>
               <label class="text-xs font-bold text-slate-300 block mb-1">Empaako</label>
-              <select id="regEmpaako" class="w-full bg-slate-900 border border-slate-700 text-xs text-white rounded-lg px-3 py-2.5 focus:border-amber-600 focus:outline-none">
+              <select id="regEmpaako" class="w-full bg-slate-950/80 border border-slate-700 text-xs sm:text-sm text-white rounded-xl px-3 py-2.5 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 transition">
                 <option value="">None</option>
                 <option>Abwooli</option><option>Amooti</option><option>Akiiki</option>
                 <option>Apuuli</option><option>Araali</option><option>Atwoki</option>
@@ -418,81 +453,64 @@
             </div>
             <div>
               <label class="text-xs font-bold text-slate-300 block mb-1">Gender</label>
-              <select id="regGender" class="w-full bg-slate-900 border border-slate-700 text-xs text-white rounded-lg px-3 py-2.5 focus:border-amber-600 focus:outline-none">
+              <select id="regGender" class="w-full bg-slate-950/80 border border-slate-700 text-xs sm:text-sm text-white rounded-xl px-3 py-2.5 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 transition">
                 <option value="male">Male</option>
                 <option value="female">Female</option>
               </select>
             </div>
             <div>
               <label class="text-xs font-bold text-slate-300 block mb-1">Birth Year *</label>
-              <input type="number" id="regBirthYear" required min="1850" max="2026" value="1990" class="w-full bg-slate-900 border border-slate-700 text-xs text-white rounded-lg px-3 py-2.5 focus:border-amber-600 focus:outline-none">
+              <input type="number" id="regBirthYear" required min="1850" max="2026" value="1995" class="w-full bg-slate-950/80 border border-slate-700 text-xs sm:text-sm text-white rounded-xl px-3.5 py-2.5 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 transition">
             </div>
           </div>
 
-          <!-- Deceased -->
-          <div class="p-3.5 rounded-xl bg-slate-900 border border-slate-700">
-            <label class="flex items-center gap-2.5 text-xs text-slate-300 cursor-pointer">
-              <input type="checkbox" id="regIsDeceased" class="rounded border-slate-700 text-amber-600 focus:ring-0">
-              <span class="font-semibold">This relative is deceased (Add to In Memoriam Wall)</span>
-            </label>
-            <div id="deathYearField" class="hidden mt-3 pt-3 border-t border-slate-800">
-              <label class="text-xs font-bold text-slate-300 block mb-1">Year of Passing</label>
-              <input type="number" id="regDeathYear" min="1850" max="2026" placeholder="e.g. 1998" class="w-36 bg-slate-900 border border-slate-700 text-xs text-white rounded-lg px-3 py-2 focus:border-amber-600 focus:outline-none">
+          <!-- Address / Location Field (Simple!) -->
+          <div>
+            <label class="text-xs font-bold text-slate-300 block mb-1">Address / Location</label>
+            <div class="relative">
+              <input type="text" id="regAddress" placeholder="e.g. Hoima, Uganda or Kampala" class="w-full bg-slate-950/80 border border-slate-700 text-xs sm:text-sm text-white rounded-xl pl-9 pr-3.5 py-2.5 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 transition">
+              <svg class="w-4 h-4 text-slate-500 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
             </div>
           </div>
 
-          <!-- Lineage Links -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- Lineage Connections -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div>
               <label class="text-xs font-bold text-slate-300 block mb-1">Parent in Tree</label>
-              <select id="regParent" class="w-full bg-slate-900 border border-slate-700 text-xs text-white rounded-lg px-3 py-2.5 focus:border-amber-600 focus:outline-none"></select>
-              <p id="regParentNotice" class="text-[11px] text-slate-500 mt-1"></p>
+              <select id="regParent" class="w-full bg-slate-950/80 border border-slate-700 text-xs text-white rounded-xl px-3 py-2.5 focus:border-amber-500 focus:outline-none transition"></select>
+              <p id="regParentNotice" class="text-[10px] text-slate-400 mt-1"></p>
             </div>
             <div>
-              <label class="text-xs font-bold text-slate-300 block mb-1">Spouse / Partner in Tree</label>
-              <select id="regSpouse" class="w-full bg-slate-900 border border-slate-700 text-xs text-white rounded-lg px-3 py-2.5 focus:border-amber-600 focus:outline-none"></select>
+              <label class="text-xs font-bold text-slate-300 block mb-1">Spouse / Partner</label>
+              <select id="regSpouse" class="w-full bg-slate-950/80 border border-slate-700 text-xs text-white rounded-xl px-3 py-2.5 focus:border-amber-500 focus:outline-none transition"></select>
             </div>
           </div>
 
-          <!-- Branch & Location -->
-          <div class="grid grid-cols-3 gap-4">
-            <div>
-              <label class="text-xs font-bold text-slate-300 block mb-1">Branch / Lineage</label>
-              <input type="text" id="regBranch" placeholder="e.g. Bunyoro Main" class="w-full bg-slate-900 border border-slate-700 text-xs text-white rounded-lg px-3 py-2.5 focus:border-amber-600 focus:outline-none">
+          <!-- Deceased Relative Toggle -->
+          <div class="p-3.5 rounded-xl bg-slate-800/60 border border-slate-700/70">
+            <label class="flex items-center gap-2.5 text-xs text-slate-200 cursor-pointer select-none">
+              <input type="checkbox" id="regIsDeceased" class="w-4 h-4 rounded border-slate-600 bg-slate-900 text-amber-600 focus:ring-0">
+              <span class="font-semibold">This relative is deceased (Add to In Memoriam)</span>
+            </label>
+            <div id="deathYearField" class="hidden mt-3 pt-3 border-t border-slate-700/60 flex items-center gap-3">
+              <label class="text-xs font-bold text-slate-300 whitespace-nowrap">Year of Passing:</label>
+              <input type="number" id="regDeathYear" min="1850" max="2026" placeholder="e.g. 1998" class="w-32 bg-slate-950/80 border border-slate-700 text-xs text-white rounded-xl px-3 py-2 focus:border-amber-500 focus:outline-none">
             </div>
-            <div>
-              <label class="text-xs font-bold text-slate-300 block mb-1">City / Town</label>
-              <input type="text" id="regCity" placeholder="e.g. Hoima" class="w-full bg-slate-900 border border-slate-700 text-xs text-white rounded-lg px-3 py-2.5 focus:border-amber-600 focus:outline-none">
-            </div>
-            <div>
-              <label class="text-xs font-bold text-slate-300 block mb-1">Country</label>
-              <input type="text" id="regCountry" placeholder="e.g. Uganda" class="w-full bg-slate-900 border border-slate-700 text-xs text-white rounded-lg px-3 py-2.5 focus:border-amber-600 focus:outline-none">
-            </div>
-          </div>
-
-          <!-- Occupation & Bio -->
-          <div>
-            <label class="text-xs font-bold text-slate-300 block mb-1">Occupation</label>
-            <input type="text" id="regOccupation" placeholder="e.g. Teacher, Engineer, Farmer..." class="w-full bg-slate-900 border border-slate-700 text-xs text-white rounded-lg px-3 py-2.5 focus:border-amber-600 focus:outline-none">
-          </div>
-          <div>
-            <label class="text-xs font-bold text-slate-300 block mb-1">Short Biography</label>
-            <textarea id="regBio" rows="2" placeholder="Brief notes about this person..." class="w-full bg-slate-900 border border-slate-700 text-xs text-white rounded-lg px-3 py-2 focus:border-amber-600 focus:outline-none"></textarea>
-          </div>
-          <div>
-            <label class="text-xs font-bold text-slate-300 block mb-1">Photo URL (Optional)</label>
-            <input type="url" id="regPhotoUrl" placeholder="https://... (Leave blank for initials)" class="w-full bg-slate-900 border border-slate-700 text-xs text-white rounded-lg px-3 py-2.5 focus:border-amber-600 focus:outline-none">
           </div>
 
           <!-- Passcode -->
-          <div class="p-3.5 rounded-xl bg-slate-900 border border-slate-700">
-            <label class="text-xs font-bold text-slate-300 block mb-1">Family Passcode *</label>
-            <input type="text" id="regPin" required placeholder="KINTU2026" value="KINTU2026" class="w-full bg-slate-900 border border-slate-600 text-xs text-white rounded-lg px-3 py-2.5 focus:border-amber-600 focus:outline-none tracking-widest font-mono font-bold text-center">
-            <p class="text-[11px] text-slate-500 mt-1 text-center">Default passcode: KINTU2026</p>
+          <div class="p-3.5 rounded-xl bg-slate-800/60 border border-slate-700/70">
+            <div class="flex items-center justify-between mb-1">
+              <label class="text-xs font-bold text-slate-300">Family Passcode *</label>
+              <span class="text-[10px] text-amber-500 font-mono font-bold">Default: KINTU2026</span>
+            </div>
+            <input type="text" id="regPin" required placeholder="KINTU2026" value="KINTU2026" class="w-full bg-slate-950/80 border border-slate-700 text-xs sm:text-sm text-white rounded-xl px-3 py-2.5 focus:border-amber-500 focus:outline-none tracking-widest font-mono font-bold text-center">
           </div>
 
-          <button type="submit" class="w-full py-3 rounded-xl bg-amber-700 hover:bg-amber-600 text-white font-extrabold text-sm shadow-lg transition">
-            Add to Family Tree
+          <!-- Submit Button -->
+          <button type="submit" id="btnSubmitAddMember" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white font-extrabold text-sm shadow-lg shadow-amber-900/30 transition flex items-center justify-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            <span>Add to Family Tree</span>
           </button>
         </form>
       </div>
@@ -545,28 +563,33 @@
   </div>
 
   <!-- MODAL: MEMBER PROFILE -->
-  <div id="memberProfileModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4 overflow-y-auto">
-    <div class="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-lg p-6 sm:p-8 shadow-2xl relative">
-      <button onclick="document.getElementById('memberProfileModal').classList.add('hidden')" class="absolute top-4 right-4 text-slate-400 hover:text-white text-xl font-bold">&times;</button>
-      <div class="flex items-start gap-4 mb-6">
-        <img id="modalMemberPhoto" src="" class="w-20 h-20 rounded-2xl object-cover border-2 border-slate-600 shadow-lg hidden">
-        <div id="modalMemberPhotoFallback" class="w-20 h-20 rounded-2xl bg-slate-700 border-2 border-slate-600 flex items-center justify-center text-slate-300 font-bold text-2xl shadow-lg"></div>
-        <div>
-          <span id="modalMemberGenBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-900/20 border border-amber-800/30 text-amber-500 mb-1 inline-block"></span>
-          <h3 id="modalMemberName" class="text-xl font-bold text-white font-serif-royal"></h3>
-          <p id="modalMemberTradName" class="text-xs text-amber-500 font-semibold"></p>
-          <p id="modalMemberOccupation" class="text-xs text-slate-300 font-medium mt-0.5"></p>
-          <p id="modalMemberDates" class="text-[11px] text-slate-400 mt-1"></p>
-          <p id="modalMemberLocation" class="text-[11px] text-slate-400"></p>
+  <div id="memberProfileModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-lg shadow-2xl relative my-auto max-h-[92vh] flex flex-col overflow-hidden">
+      <!-- Header -->
+      <div class="px-5 py-4 sm:px-6 sm:py-5 border-b border-slate-800 flex items-center justify-between shrink-0 bg-slate-900/90">
+        <span class="text-xs font-bold uppercase tracking-wider text-amber-500">Member Profile</span>
+        <button onclick="document.getElementById('memberProfileModal').classList.add('hidden')" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center text-lg font-bold transition">&times;</button>
+      </div>
+      <!-- Content -->
+      <div class="p-5 sm:p-6 overflow-y-auto space-y-5">
+        <div class="flex items-start gap-4">
+          <img id="modalMemberPhoto" src="" class="w-20 h-20 rounded-2xl object-cover border-2 border-amber-600/40 shadow-lg hidden shrink-0" alt="Profile">
+          <div id="modalMemberPhotoFallback" class="w-20 h-20 rounded-2xl bg-slate-800 border-2 border-slate-700 flex items-center justify-center text-amber-500 font-bold text-2xl shadow-lg shrink-0"></div>
+          <div class="min-w-0 flex-1">
+            <span id="modalMemberGenBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-500/15 border border-amber-500/30 text-amber-400 mb-1 inline-block"></span>
+            <h3 id="modalMemberName" class="text-xl sm:text-2xl font-bold text-white font-serif-royal truncate"></h3>
+            <p id="modalMemberTradName" class="text-xs text-amber-400 font-semibold mt-0.5"></p>
+            <p id="modalMemberDates" class="text-xs text-slate-400 mt-1"></p>
+            <p id="modalMemberLocation" class="text-xs text-slate-400 flex items-center gap-1.5 mt-0.5">
+              <svg class="w-3.5 h-3.5 text-slate-500 inline shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+              <span id="modalMemberLocationText"></span>
+            </p>
+          </div>
         </div>
-      </div>
-      <div class="mb-5">
-        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Biography</h4>
-        <p id="modalMemberBio" class="text-xs text-slate-300 leading-relaxed"></p>
-      </div>
-      <div class="pt-4 border-t border-slate-700/60">
-        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Family Connections</h4>
-        <div id="modalMemberRelations"></div>
+        <div class="pt-4 border-t border-slate-800">
+          <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2.5">Family Connections</h4>
+          <div id="modalMemberRelations"></div>
+        </div>
       </div>
     </div>
   </div>

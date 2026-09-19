@@ -30,12 +30,16 @@ async function syncFromDB() {
   if (changed) {
     saveFamilyData(appData);
     treeEngine.setData(appData);
-    initDirectory(); initMemorialWall(); renderGalleryItems("all"); updateHeroCount();
+    initDirectory();
+    initMemorialWall();
+    renderGalleryItems("all");
+    updateHeroCount();
   }
   const rsvpTotal = await fetchRsvpTotal();
   const rsvpEl = document.getElementById("rsvpConfirmedNumber");
   if (rsvpEl && rsvpTotal > 0) rsvpEl.textContent = rsvpTotal;
 }
+
 /* TREE */
 function initTree() {
   treeEngine = new FamilyTreeEngine("treeContainer", { onNodeClick: (m) => openMemberModal(m) });
@@ -50,19 +54,19 @@ function initTree() {
         (m.firstName && m.firstName.toLowerCase().includes(q)) ||
         (m.lastName && m.lastName.toLowerCase().includes(q)) ||
         (m.empaako && m.empaako.toLowerCase().includes(q)) ||
-        (m.occupation && m.occupation.toLowerCase().includes(q))
+        (m.location && m.location.toLowerCase().includes(q))
       ).slice(0, 6);
       sr.innerHTML = matches.length === 0
         ? `<div class="p-3 text-xs text-slate-400">No relatives found for "${q}"</div>`
         : matches.map(m => `
             <div class="p-2.5 hover:bg-slate-800/80 cursor-pointer flex items-center justify-between border-b border-slate-700/40 last:border-0" data-member-id="${m.id}">
               <div class="flex items-center gap-2">
-                <div class="w-7 h-7 rounded-md bg-slate-800 flex items-center justify-center text-slate-300 text-xs font-bold">
+                <div class="w-7 h-7 rounded-md bg-slate-800 flex items-center justify-center text-slate-300 text-xs font-bold overflow-hidden">
                   ${m.photo ? `<img src="${m.photo}" class="w-7 h-7 rounded-md object-cover">` : m.firstName[0]}
                 </div>
                 <div>
                   <div class="text-xs font-semibold text-white">${m.firstName} ${m.lastName}</div>
-                  <div class="text-[10px] text-amber-500">Gen ${m.generation} &bull; ${m.branch || "Lineage"}</div>
+                  <div class="text-[10px] text-amber-500">Gen ${m.generation} &bull; ${m.location || "Bunyoro-Kitara"}</div>
                 </div>
               </div>
               <span class="text-[10px] text-slate-400">Jump &rarr;</span>
@@ -77,6 +81,7 @@ function initTree() {
     });
     document.addEventListener("click", (e) => { if (!si.contains(e.target) && !sr.contains(e.target)) sr.classList.add("hidden"); });
   }
+
   document.querySelectorAll(".filter-gen-btn").forEach(btn => {
     btn.addEventListener("click", () => {
       document.querySelectorAll(".filter-gen-btn").forEach(b => { b.classList.remove("bg-amber-600","text-white"); b.classList.add("bg-slate-800","text-slate-300"); });
@@ -84,9 +89,17 @@ function initTree() {
       treeEngine.setFilters(btn.dataset.gen, document.getElementById("branchSelectFilter")?.value || "all");
     });
   });
+
   const bs = document.getElementById("branchSelectFilter");
-  if (bs) { updateBranchDropdown(bs); bs.addEventListener("change", () => { const a = document.querySelector(".filter-gen-btn.bg-amber-600"); treeEngine.setFilters(a ? a.dataset.gen : "all", bs.value); }); }
+  if (bs) {
+    updateBranchDropdown(bs);
+    bs.addEventListener("change", () => {
+      const a = document.querySelector(".filter-gen-btn.bg-amber-600");
+      treeEngine.setFilters(a ? a.dataset.gen : "all", bs.value);
+    });
+  }
 }
+
 function updateBranchDropdown(sel) {
   if (!sel) return;
   const branches = [...new Set(appData.members.map(m => m.branch).filter(Boolean))];
@@ -125,21 +138,24 @@ function initMemorialWall() {
       <h4 class="text-base font-bold text-white mb-1">In Memory of Departed Elders</h4>
       <p class="text-xs text-slate-400 max-w-md mx-auto mb-4 leading-relaxed">Departed ancestors will appear here when added to the tree with "Deceased" checked.</p>
       <button onclick="document.getElementById('btnOpenAddMember').click()" class="text-xs text-amber-500 hover:text-amber-400 underline font-semibold">Add an Ancestor &rarr;</button>
-    </div>`; return;
+    </div>`;
+    return;
   }
   c.innerHTML = deceased.map(m => `
     <div class="bg-slate-900 rounded-2xl border border-slate-700/60 p-6 flex flex-col justify-between hover:border-slate-600 transition group">
       <div>
         <div class="flex items-center gap-4 mb-4">
-          ${m.photo ? `<img src="${m.photo}" class="w-16 h-16 rounded-full object-cover border-2 border-slate-600 grayscale group-hover:grayscale-0 transition duration-500">` : `<div class="w-16 h-16 rounded-full bg-slate-800 border-2 border-slate-700 flex items-center justify-center text-slate-400 font-bold text-lg">${m.firstName[0]}</div>`}
+          ${m.photo
+            ? `<img src="${m.photo}" class="w-16 h-16 rounded-full object-cover border-2 border-slate-600 grayscale group-hover:grayscale-0 transition duration-500">`
+            : `<div class="w-16 h-16 rounded-full bg-slate-800 border-2 border-slate-700 flex items-center justify-center text-amber-500 font-bold text-lg">${m.firstName[0]}</div>`
+          }
           <div>
             <h4 class="text-base font-bold text-white">${m.firstName} ${m.lastName}</h4>
             <p class="text-xs text-amber-500 font-medium">${m.birthYear || ""} &ndash; ${m.deathYear || "Passed"}</p>
-            ${m.empaako ? `<p class="text-[11px] text-slate-400">Empaako: ${m.empaako}</p>` : ""}
-            <p class="text-xs text-slate-400">${m.occupation || "Elder"}</p>
+            ${m.empaako ? `<p class="text-[11px] text-slate-400">Empaako: "${m.empaako}"</p>` : ""}
+            <p class="text-xs text-slate-400">${m.location || "Bunyoro-Kitara"}</p>
           </div>
         </div>
-        <p class="text-xs text-slate-400 leading-relaxed">${m.bio || "Remembered with love by the Kintu family."}</p>
       </div>
       <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-500">
         <span>In Perpetual Memory</span><span class="text-amber-500 font-medium">Kintu Family</span>
@@ -172,6 +188,7 @@ function initGallery() {
     });
   }
 }
+
 function renderGalleryItems(category) {
   const grid = document.getElementById("galleryGrid"); if (!grid) return;
   if (!appData.gallery.length) {
@@ -198,6 +215,7 @@ function renderGalleryItems(category) {
       </div>
     </div>`).join("");
 }
+
 function openLightbox(src, title, caption, year) {
   document.getElementById("lightboxImg").src = src;
   document.getElementById("lightboxTitle").textContent = title;
@@ -210,51 +228,77 @@ function openLightbox(src, title, caption, year) {
 function initDirectory() {
   const grid = document.getElementById("directoryGrid");
   const si = document.getElementById("directorySearch");
-  const rs = document.getElementById("directoryRoleFilter");
+  const rf = document.getElementById("directoryRoleFilter");
+
   function render(list) {
     if (!grid) return;
     document.getElementById("directoryTotalCount").textContent = `${list.length} Relatives Recorded`;
-    if (!list.length) { grid.innerHTML = `<div class="col-span-full p-8 rounded-2xl bg-slate-900 border border-slate-800 text-center"><p class="text-xs text-slate-400 mb-3">No relatives yet.</p><button onclick="document.getElementById('btnOpenAddMember').click()" class="text-xs text-amber-500 font-semibold underline">Add a Member &rarr;</button></div>`; return; }
+    if (!list.length) {
+      grid.innerHTML = `
+        <div class="col-span-full p-8 rounded-2xl bg-slate-900 border border-slate-800 text-center">
+          <p class="text-xs text-slate-400 mb-3">No relatives found matching your filter.</p>
+          <button onclick="document.getElementById('btnOpenAddMember').click()" class="text-xs text-amber-500 font-semibold underline">Add a Member &rarr;</button>
+        </div>`;
+      return;
+    }
     grid.innerHTML = list.map(m => `
-      <div class="p-4 rounded-2xl bg-slate-900 border border-slate-700/60 hover:border-slate-600 transition flex flex-col justify-between">
+      <div class="p-4 rounded-2xl bg-slate-900 border border-slate-700/60 hover:border-slate-600 transition flex flex-col justify-between group">
         <div>
           <div class="flex items-start gap-3 mb-3">
-            ${m.photo ? `<img src="${m.photo}" class="w-14 h-14 rounded-xl object-cover border border-slate-700">` : `<div class="w-14 h-14 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 font-bold text-lg">${m.firstName[0]}</div>`}
+            ${m.photo
+              ? `<img src="${m.photo}" class="w-14 h-14 rounded-xl object-cover border border-slate-700 shadow-sm shrink-0">`
+              : `<div class="w-14 h-14 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-amber-500 font-bold text-lg shrink-0">${m.firstName[0]}</div>`
+            }
             <div class="min-w-0 flex-1">
               <h4 class="text-sm font-bold text-white truncate">${m.firstName} ${m.lastName}</h4>
-              ${m.empaako ? `<p class="text-xs text-amber-500 font-medium">"${m.empaako}"</p>` : ""}
-              <p class="text-xs text-slate-300 font-medium truncate mt-0.5">${m.occupation || "Family Member"}</p>
-              <p class="text-[11px] text-slate-500 truncate">${m.location || "Location Not Specified"}</p>
+              ${m.empaako ? `<p class="text-xs text-amber-400 font-medium">"${m.empaako}"</p>` : ""}
+              <p class="text-xs text-slate-400 truncate mt-1 flex items-center gap-1">
+                <svg class="w-3 h-3 text-slate-500 inline shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/></svg>
+                <span>${m.location || "Location Not Specified"}</span>
+              </p>
             </div>
           </div>
-          <p class="text-xs text-slate-500 line-clamp-2 leading-relaxed mb-3">${m.bio || "Proud member of the Kintu family."}</p>
         </div>
         <div class="pt-3 border-t border-slate-800 flex items-center justify-between">
-          <span class="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700 font-semibold">Gen ${m.generation} &bull; ${m.branch || "Lineage"}</span>
+          <span class="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700 font-semibold">Gen ${m.generation}</span>
           <button class="text-xs text-amber-500 hover:text-amber-400 font-semibold" onclick="viewMemberDetail('${m.id}')">View Profile &rarr;</button>
         </div>
       </div>`).join("");
   }
+
   function filter() {
     const q = (si?.value || "").toLowerCase().trim();
-    const role = (rs?.value || "all").toLowerCase();
+    const gen = (rf?.value || "all");
     render(appData.members.filter(m => {
-      const t = `${m.firstName} ${m.lastName} ${m.empaako||""} ${m.location||""} ${m.occupation||""}`.toLowerCase();
-      return t.includes(q) && (role === "all" || (m.occupation && m.occupation.toLowerCase().includes(role)));
+      const matchText = `${m.firstName} ${m.lastName} ${m.empaako||""} ${m.location||""}`.toLowerCase();
+      const textOk = !q || matchText.includes(q);
+      const genOk = gen === "all" || String(m.generation) === String(gen);
+      return textOk && genOk;
     }));
   }
+
   if (si) si.addEventListener("input", filter);
-  if (rs) rs.addEventListener("change", filter);
+  if (rf) rf.addEventListener("change", filter);
   render(appData.members);
 }
+
 function viewMemberDetail(id) {
   const m = appData.members.find(m => m.id === id);
-  if (m) { openMemberModal(m); document.getElementById("treeSection")?.scrollIntoView({behavior:"smooth"}); treeEngine.focusOnMember(id); }
+  if (m) {
+    openMemberModal(m);
+    document.getElementById("treeSection")?.scrollIntoView({ behavior: "smooth" });
+    treeEngine.focusOnMember(id);
+  }
 }
 
 /* REUNION RSVP */
 function initReunion() {
-  fetchRsvpTotal().then(total => { if (total > 0) { const el = document.getElementById("rsvpConfirmedNumber"); if (el) el.textContent = total; } });
+  fetchRsvpTotal().then(total => {
+    if (total > 0) {
+      const el = document.getElementById("rsvpConfirmedNumber");
+      if (el) el.textContent = total;
+    }
+  });
   const f = document.getElementById("reunionRsvpForm");
   if (f) {
     f.addEventListener("submit", async (e) => {
@@ -263,32 +307,130 @@ function initReunion() {
       const branch = document.getElementById("rsvpBranch").value.trim();
       const count = parseInt(document.getElementById("rsvpCount").value) || 1;
       const total = await submitRsvpToDB(name, branch, count);
-      if (total !== null) { const el = document.getElementById("rsvpConfirmedNumber"); if (el) el.textContent = total; }
+      if (total !== null) {
+        const el = document.getElementById("rsvpConfirmedNumber");
+        if (el) el.textContent = total;
+      }
       alert(`Thank you, ${name}! RSVP for ${count} guest(s) recorded.`);
       f.reset();
     });
   }
 }
 
-/* ADD MEMBER FORM (single form, no wizard) */
+/* IMAGE COMPRESSION UTILITY */
+function compressImage(file, maxDimension = 500, quality = 0.82) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Failed to read file"));
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onerror = () => reject(new Error("Invalid image format"));
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+        if (width > height) {
+          if (width > maxDimension) {
+            height = Math.round((height * maxDimension) / width);
+            width = maxDimension;
+          }
+        } else {
+          if (height > maxDimension) {
+            width = Math.round((width * maxDimension) / height);
+            height = maxDimension;
+          }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+/* ADD MEMBER FORM (Redesigned, real file upload, simplified address) */
+let currentUploadedPhotoBase64 = "";
+
 function initModalsAndForms() {
   const openAddBtn = document.getElementById("btnOpenAddMember");
   const openAddHeroBtn = document.getElementById("btnHeroAddMember");
   const addModal = document.getElementById("addMemberModal");
   const closeAddBtn = document.getElementById("btnCloseAddMember");
-  const openAdd = () => { populateParentDropdowns(); addModal.classList.remove("hidden"); };
+  const openAdd = () => {
+    populateParentDropdowns();
+    addModal.classList.remove("hidden");
+  };
+
   if (openAddBtn) openAddBtn.addEventListener("click", openAdd);
   if (openAddHeroBtn) openAddHeroBtn.addEventListener("click", openAdd);
   if (closeAddBtn) closeAddBtn.addEventListener("click", () => addModal.classList.add("hidden"));
+
   window.addEventListener("click", (e) => {
     if (e.target === addModal) addModal.classList.add("hidden");
-    const mm = document.getElementById("memberProfileModal"); if (e.target === mm) mm.classList.add("hidden");
-    const lb = document.getElementById("lightboxModal"); if (e.target === lb) lb.classList.add("hidden");
-    const pm = document.getElementById("addPhotoModal"); if (e.target === pm) pm.classList.add("hidden");
+    const mm = document.getElementById("memberProfileModal");
+    if (e.target === mm) mm.classList.add("hidden");
+    const lb = document.getElementById("lightboxModal");
+    if (e.target === lb) lb.classList.add("hidden");
+    const pm = document.getElementById("addPhotoModal");
+    if (e.target === pm) pm.classList.add("hidden");
   });
+
   const decCheck = document.getElementById("regIsDeceased");
   const deathDiv = document.getElementById("deathYearField");
-  if (decCheck && deathDiv) decCheck.addEventListener("change", () => deathDiv.classList.toggle("hidden", !decCheck.checked));
+  if (decCheck && deathDiv) {
+    decCheck.addEventListener("change", () => deathDiv.classList.toggle("hidden", !decCheck.checked));
+  }
+
+  // Real Photo Upload handling
+  const fileInput = document.getElementById("regPhotoFileInput");
+  const btnChoosePhoto = document.getElementById("btnChoosePhoto");
+  const btnRemovePhoto = document.getElementById("btnRemovePhoto");
+  const previewImg = document.getElementById("regPhotoPreview");
+  const previewPlaceholder = document.getElementById("regPhotoPlaceholder");
+
+  const resetPhotoUpload = () => {
+    currentUploadedPhotoBase64 = "";
+    if (fileInput) fileInput.value = "";
+    if (previewImg) { previewImg.src = ""; previewImg.classList.add("hidden"); }
+    if (previewPlaceholder) previewPlaceholder.classList.remove("hidden");
+    if (btnRemovePhoto) btnRemovePhoto.classList.add("hidden");
+  };
+
+  if (btnChoosePhoto && fileInput) {
+    btnChoosePhoto.addEventListener("click", () => fileInput.click());
+  }
+
+  if (fileInput) {
+    fileInput.addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      if (!file.type.startsWith("image/")) {
+        alert("Please select a valid image file (PNG, JPG, JPEG, WebP).");
+        return;
+      }
+      try {
+        const compressedBase64 = await compressImage(file, 500, 0.82);
+        currentUploadedPhotoBase64 = compressedBase64;
+        if (previewImg) {
+          previewImg.src = compressedBase64;
+          previewImg.classList.remove("hidden");
+        }
+        if (previewPlaceholder) previewPlaceholder.classList.add("hidden");
+        if (btnRemovePhoto) btnRemovePhoto.classList.remove("hidden");
+      } catch (err) {
+        console.error("Image processing error", err);
+        alert("Could not process the selected image. Please try another photo.");
+      }
+    });
+  }
+
+  if (btnRemovePhoto) {
+    btnRemovePhoto.addEventListener("click", resetPhotoUpload);
+  }
 
   const form = document.getElementById("addMemberForm");
   if (form) {
@@ -296,11 +438,17 @@ function initModalsAndForms() {
       e.preventDefault();
       const pin = document.getElementById("regPin").value.trim();
       if (pin.toUpperCase() !== (appData.familyInfo?.familyPin || "KINTU2026")) {
-        alert("Incorrect Family Passcode."); return;
+        alert("Incorrect Family Passcode.");
+        return;
       }
+
       const firstName = document.getElementById("regFirstName").value.trim();
       const lastName = document.getElementById("regLastName").value.trim();
-      if (!firstName || !lastName) { alert("Please enter first and last name."); return; }
+      if (!firstName || !lastName) {
+        alert("Please enter first and last name.");
+        return;
+      }
+
       const empaako = document.getElementById("regEmpaako").value.trim();
       const gender = document.getElementById("regGender").value;
       const birthYear = parseInt(document.getElementById("regBirthYear").value) || 2000;
@@ -308,47 +456,124 @@ function initModalsAndForms() {
       const deathYear = isDeceased ? parseInt(document.getElementById("regDeathYear").value) || null : null;
       const parentId = document.getElementById("regParent").value;
       const spouseId = document.getElementById("regSpouse").value;
-      const branch = document.getElementById("regBranch").value.trim() || "Main Lineage";
-      const occupation = document.getElementById("regOccupation").value.trim() || "Family Member";
-      const city = document.getElementById("regCity").value.trim() || "Bunyoro";
-      const country = document.getElementById("regCountry").value.trim() || "Uganda";
-      const bio = document.getElementById("regBio").value.trim() || "Descendant of the Kintu family lineage.";
-      const photo = document.getElementById("regPhotoUrl").value.trim() || "";
+      const address = document.getElementById("regAddress")?.value.trim() || "Bunyoro-Kitara, Uganda";
+      const photo = currentUploadedPhotoBase64 || "";
+
       let generation = 1;
-      if (parentId) { const p = appData.members.find(m => m.id === parentId); if (p) generation = Math.min((p.generation||1)+1, 8); }
-      else if (spouseId) { const s = appData.members.find(m => m.id === spouseId); if (s) generation = s.generation || 1; }
+      if (parentId) {
+        const p = appData.members.find(m => m.id === parentId);
+        if (p) generation = Math.min((p.generation || 1) + 1, 8);
+      } else if (spouseId) {
+        const s = appData.members.find(m => m.id === spouseId);
+        if (s) generation = s.generation || 1;
+      }
+
       const newId = `member-${Date.now()}`;
-      const newMember = { id:newId, firstName, lastName, empaako, traditionalName:empaako, gender, generation, birthYear, deathYear, isDeceased, branch, location:`${city}, ${country}`, country, occupation, bio, photo, parentIds:parentId?[parentId]:[], spouseIds:spouseId?[spouseId]:[], childrenIds:[] };
-      if (parentId) { const p = appData.members.find(m => m.id === parentId); if (p) { if (!p.childrenIds) p.childrenIds=[]; p.childrenIds.push(newId); } }
-      if (spouseId) { const s = appData.members.find(m => m.id === spouseId); if (s) { if (!s.spouseIds) s.spouseIds=[]; if (!s.spouseIds.includes(newId)) s.spouseIds.push(newId); } }
-      appData.members.push(newMember); saveFamilyData(appData);
-      const btn = form.querySelector("button[type=submit]");
-      const orig = btn.textContent; btn.textContent = "Saving to database..."; btn.disabled = true;
+      const newMember = {
+        id: newId,
+        firstName,
+        lastName,
+        empaako,
+        traditionalName: empaako,
+        gender,
+        generation,
+        birthYear,
+        deathYear,
+        isDeceased,
+        branch: "Main Lineage",
+        location: address,
+        country: "Uganda",
+        occupation: "",
+        bio: "",
+        photo,
+        parentIds: parentId ? [parentId] : [],
+        spouseIds: spouseId ? [spouseId] : [],
+        childrenIds: []
+      };
+
+      if (parentId) {
+        const p = appData.members.find(m => m.id === parentId);
+        if (p) {
+          if (!p.childrenIds) p.childrenIds = [];
+          p.childrenIds.push(newId);
+        }
+      }
+      if (spouseId) {
+        const s = appData.members.find(m => m.id === spouseId);
+        if (s) {
+          if (!s.spouseIds) s.spouseIds = [];
+          if (!s.spouseIds.includes(newId)) s.spouseIds.push(newId);
+        }
+      }
+
+      appData.members.push(newMember);
+      saveFamilyData(appData);
+
+      const btn = document.getElementById("btnSubmitAddMember") || form.querySelector("button[type=submit]");
+      const origText = btn.innerHTML;
+      btn.innerHTML = `<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg> Saving to database...`;
+      btn.disabled = true;
+
       await saveMemberToDB(newMember);
-      btn.textContent = orig; btn.disabled = false;
-      addModal.classList.add("hidden"); form.reset(); deathDiv?.classList.add("hidden");
-      treeEngine.setData(appData); initDirectory(); initMemorialWall(); updateHeroCount();
+
+      btn.innerHTML = origText;
+      btn.disabled = false;
+
+      addModal.classList.add("hidden");
+      form.reset();
+      resetPhotoUpload();
+      deathDiv?.classList.add("hidden");
+
+      treeEngine.setData(appData);
+      initDirectory();
+      initMemorialWall();
+      updateHeroCount();
       updateBranchDropdown(document.getElementById("branchSelectFilter"));
-      fireCelebrationConfetti(); treeEngine.focusOnMember(newId);
-      setTimeout(() => alert(`${firstName} has been added to the Kintu Family Tree!`), 350);
+      fireCelebrationConfetti();
+      treeEngine.focusOnMember(newId);
+
+      setTimeout(() => alert(`${firstName} ${lastName} has been added to the Kintu Family Tree!`), 300);
     });
   }
 }
-function updateHeroCount() { const el = document.getElementById("heroMemberCount"); if (el) el.textContent = appData.members.length; }
+
+function updateHeroCount() {
+  const el = document.getElementById("heroMemberCount");
+  if (el) el.textContent = appData.members.length;
+}
+
 function populateParentDropdowns() {
-  const ps = document.getElementById("regParent"); const ss = document.getElementById("regSpouse"); const pn = document.getElementById("regParentNotice");
+  const ps = document.getElementById("regParent");
+  const ss = document.getElementById("regSpouse");
+  const pn = document.getElementById("regParentNotice");
   if (!ps) return;
   if (!appData.members.length) {
-    ps.innerHTML = '<option value="">First Root Member (Generation 1)</option>'; ps.disabled = true;
-    if (ss) { ss.innerHTML = '<option value="">None (First Member)</option>'; ss.disabled = true; }
+    ps.innerHTML = '<option value="">First Root Member (Generation 1)</option>';
+    ps.disabled = true;
+    if (ss) {
+      ss.innerHTML = '<option value="">None (First Member)</option>';
+      ss.disabled = true;
+    }
     if (pn) pn.textContent = "You are planting the first root of the family tree! This person will be Generation 1.";
   } else {
-    ps.disabled = false; ps.innerHTML = '<option value="">-- None (Root Member / G1) --</option>';
-    if (ss) { ss.disabled = false; ss.innerHTML = '<option value="">-- None / Unmarried --</option>'; }
+    ps.disabled = false;
+    ps.innerHTML = '<option value="">-- None (Root Member / G1) --</option>';
+    if (ss) {
+      ss.disabled = false;
+      ss.innerHTML = '<option value="">-- None / Unmarried --</option>';
+    }
     appData.members.forEach(m => {
-      const label = `${m.firstName} ${m.lastName} (Gen ${m.generation} - ${m.branch || "Lineage"})`;
-      const o = document.createElement("option"); o.value = m.id; o.textContent = label; ps.appendChild(o);
-      if (ss) { const os = document.createElement("option"); os.value = m.id; os.textContent = label; ss.appendChild(os); }
+      const label = `${m.firstName} ${m.lastName} (Gen ${m.generation}${m.empaako ? ` - "${m.empaako}"` : ""})`;
+      const o = document.createElement("option");
+      o.value = m.id;
+      o.textContent = label;
+      ps.appendChild(o);
+      if (ss) {
+        const os = document.createElement("option");
+        os.value = m.id;
+        os.textContent = label;
+        ss.appendChild(os);
+      }
     });
     if (pn) pn.textContent = "Select this member's parent in the tree. Generation is set automatically.";
   }
@@ -357,46 +582,115 @@ function populateParentDropdowns() {
 /* MEMBER PROFILE MODAL */
 function openMemberModal(member) {
   selectedMember = member;
-  const modal = document.getElementById("memberProfileModal"); if (!modal) return;
-  const pe = document.getElementById("modalMemberPhoto"); const fe = document.getElementById("modalMemberPhotoFallback");
-  if (member.photo) { pe.src = member.photo; pe.classList.remove("hidden"); fe?.classList.add("hidden"); }
-  else { pe.classList.add("hidden"); if (fe) { fe.classList.remove("hidden"); fe.textContent = member.firstName[0]; } }
+  const modal = document.getElementById("memberProfileModal");
+  if (!modal) return;
+  const pe = document.getElementById("modalMemberPhoto");
+  const fe = document.getElementById("modalMemberPhotoFallback");
+  if (member.photo) {
+    pe.src = member.photo;
+    pe.classList.remove("hidden");
+    fe?.classList.add("hidden");
+  } else {
+    pe.classList.add("hidden");
+    if (fe) {
+      fe.classList.remove("hidden");
+      fe.textContent = member.firstName[0];
+    }
+  }
+
   document.getElementById("modalMemberName").textContent = `${member.firstName} ${member.lastName}`;
   const ee = document.getElementById("modalMemberTradName");
-  if (member.empaako) { ee.textContent = `Empaako: "${member.empaako}"`; ee.classList.remove("hidden"); } else ee.classList.add("hidden");
-  document.getElementById("modalMemberOccupation").textContent = member.occupation || "Family Member";
-  document.getElementById("modalMemberLocation").textContent = member.location || "Location Not Specified";
-  document.getElementById("modalMemberGenBadge").textContent = `Generation ${member.generation} - ${member.branch || "Lineage"}`;
-  document.getElementById("modalMemberBio").textContent = member.bio || "No biography provided yet.";
-  document.getElementById("modalMemberDates").innerHTML = member.isDeceased ? `Born ${member.birthYear||"Unknown"} &ndash; Passed ${member.deathYear||"Unknown"}` : `Born ${member.birthYear||"Unknown"}`;
-  const rc = document.getElementById("modalMemberRelations"); let html = "";
-  if (member.parentIds?.length) { const pr = member.parentIds.map(id=>appData.members.find(m=>m.id===id)).filter(Boolean); if (pr.length) html+=buildRelSection("Parents",pr); }
-  if (member.spouseIds?.length) { const sr = member.spouseIds.map(id=>appData.members.find(m=>m.id===id)).filter(Boolean); if (sr.length) html+=buildRelSection("Spouse",sr); }
-  if (member.childrenIds?.length) { const cr = member.childrenIds.map(id=>appData.members.find(m=>m.id===id)).filter(Boolean); if (cr.length) html+=buildRelSection(`Children (${cr.length})`,cr); }
+  if (member.empaako) {
+    ee.textContent = `Empaako: "${member.empaako}"`;
+    ee.classList.remove("hidden");
+  } else {
+    ee.classList.add("hidden");
+  }
+
+  const locEl = document.getElementById("modalMemberLocationText");
+  if (locEl) locEl.textContent = member.location || "Location Not Specified";
+
+  document.getElementById("modalMemberGenBadge").textContent = `Generation ${member.generation}`;
+  document.getElementById("modalMemberDates").innerHTML = member.isDeceased
+    ? `Born ${member.birthYear || "Unknown"} &ndash; Passed ${member.deathYear || "Unknown"}`
+    : `Born ${member.birthYear || "Unknown"}`;
+
+  const rc = document.getElementById("modalMemberRelations");
+  let html = "";
+  if (member.parentIds?.length) {
+    const pr = member.parentIds.map(id => appData.members.find(m => m.id === id)).filter(Boolean);
+    if (pr.length) html += buildRelSection("Parents", pr);
+  }
+  if (member.spouseIds?.length) {
+    const sr = member.spouseIds.map(id => appData.members.find(m => m.id === id)).filter(Boolean);
+    if (sr.length) html += buildRelSection("Spouse", sr);
+  }
+  if (member.childrenIds?.length) {
+    const cr = member.childrenIds.map(id => appData.members.find(m => m.id === id)).filter(Boolean);
+    if (cr.length) html += buildRelSection(`Children (${cr.length})`, cr);
+  }
   rc.innerHTML = html || '<p class="text-xs text-slate-500 italic">No family links recorded yet.</p>';
   modal.classList.remove("hidden");
 }
+
 function buildRelSection(label, people) {
-  return `<div class="mb-3"><span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">${label}</span><div class="flex flex-wrap gap-2">${people.map(p=>`<button class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-amber-600 hover:text-white text-xs text-slate-200 border border-slate-700 transition" onclick="viewMemberDetail('${p.id}')">${p.firstName} ${p.lastName}</button>`).join("")}</div></div>`;
+  return `
+    <div class="mb-3">
+      <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">${label}</span>
+      <div class="flex flex-wrap gap-2">
+        ${people.map(p => `
+          <button class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-amber-600 hover:text-white text-xs text-slate-200 border border-slate-700 transition" onclick="viewMemberDetail('${p.id}')">
+            ${p.firstName} ${p.lastName}
+          </button>
+        `).join("")}
+      </div>
+    </div>`;
 }
 
 /* SCROLL, MENU, UTILS */
 function initThemeAndScroll() {
-  initScrollAnimations(); updateHeroCount();
-  const mb = document.getElementById("mobileMenuBtn"); const mn = document.getElementById("mobileNav");
-  if (mb && mn) { mb.addEventListener("click", () => mn.classList.toggle("hidden")); mn.querySelectorAll("a").forEach(l => l.addEventListener("click", () => mn.classList.add("hidden"))); }
+  initScrollAnimations();
+  updateHeroCount();
+  const mb = document.getElementById("mobileMenuBtn");
+  const mn = document.getElementById("mobileNav");
+  if (mb && mn) {
+    mb.addEventListener("click", () => mn.classList.toggle("hidden"));
+    mn.querySelectorAll("a").forEach(l => l.addEventListener("click", () => mn.classList.add("hidden")));
+  }
   const rb = document.getElementById("btnResetDatabase");
-  if (rb) rb.addEventListener("click", () => { if (confirm("Reset local cache? DB data remains intact.")) { resetFamilyDataToDefault(); location.reload(); } });
+  if (rb) {
+    rb.addEventListener("click", () => {
+      if (confirm("Reset local cache? DB data remains intact.")) {
+        resetFamilyDataToDefault();
+        location.reload();
+      }
+    });
+  }
 }
+
 function initScrollAnimations() {
   const els = document.querySelectorAll(".reveal-fade-up,.reveal-fade-left,.reveal-fade-right,.reveal-zoom-in");
-  if (!("IntersectionObserver" in window)) { els.forEach(el => el.classList.add("reveal-visible")); return; }
-  const obs = new IntersectionObserver((entries) => entries.forEach(entry => { if (entry.isIntersecting) { entry.target.classList.add("reveal-visible"); obs.unobserve(entry.target); } }), {threshold:0.12, rootMargin:"0px 0px -40px 0px"});
+  if (!("IntersectionObserver" in window)) {
+    els.forEach(el => el.classList.add("reveal-visible"));
+    return;
+  }
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add("reveal-visible");
+        obs.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.12, rootMargin: "0px 0px -40px 0px" });
   els.forEach(el => obs.observe(el));
 }
+
 function fireCelebrationConfetti() {
   if (typeof confetti === "function") {
-    confetti({particleCount:80, spread:65, origin:{y:0.6}, colors:["#d97706","#ffffff","#fbbf24"]});
-    setTimeout(() => { confetti({particleCount:45, angle:60, spread:55, origin:{x:0}, colors:["#d97706","#fbbf24"]}); confetti({particleCount:45, angle:120, spread:55, origin:{x:1}, colors:["#d97706","#fbbf24"]}); }, 280);
+    confetti({ particleCount: 80, spread: 65, origin: { y: 0.6 }, colors: ["#d97706", "#ffffff", "#fbbf24"] });
+    setTimeout(() => {
+      confetti({ particleCount: 45, angle: 60, spread: 55, origin: { x: 0 }, colors: ["#d97706", "#fbbf24"] });
+      confetti({ particleCount: 45, angle: 120, spread: 55, origin: { x: 1 }, colors: ["#d97706", "#fbbf24"] });
+    }, 280);
   }
 }
