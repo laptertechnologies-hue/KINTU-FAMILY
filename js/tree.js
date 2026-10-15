@@ -233,8 +233,7 @@ class FamilyTreeEngine {
   calculateLayout() {
     if (this.members.length === 0) return;
 
-    const genGroups = { 1: [], 2: [], 3: [], 4: [] };
-
+    const genGroups = {};
     this.members.forEach(member => {
       const gen = member.generation || 1;
       if (!genGroups[gen]) genGroups[gen] = [];
@@ -245,56 +244,19 @@ class FamilyTreeEngine {
     const ySpacing = 220;
     const baseCenterX = 1500;
 
-    // Order each generation so spouses sit adjacent
-    const g1 = this.orderGenerationWithSpouses(genGroups[1]);
-    if (g1.length > 0) {
-      const spacing = this.options.nodeWidth + 60;
-      const totalWidth = g1.length * spacing;
+    const sortedGens = Object.keys(genGroups).map(Number).sort((a, b) => a - b);
+    sortedGens.forEach((gen, idx) => {
+      const group = this.orderGenerationWithSpouses(genGroups[gen]);
+      if (!group.length) return;
+      const currentY = startY + (idx * ySpacing);
+      const spacing = this.options.nodeWidth + 40;
+      const totalWidth = group.length * spacing;
       let curX = baseCenterX - (totalWidth / 2);
-      g1.forEach(m => {
-        m.coords = { x: curX, y: startY };
+      group.forEach(m => {
+        m.coords = { x: curX, y: currentY };
         curX += spacing;
       });
-    }
-
-    // Arrange Generation 2
-    const g2 = this.orderGenerationWithSpouses(genGroups[2]);
-    const g2StartY = startY + ySpacing;
-    if (g2.length > 0) {
-      const spacing = this.options.nodeWidth + 48;
-      const totalWidth = g2.length * spacing;
-      let curX = baseCenterX - (totalWidth / 2);
-      g2.forEach(m => {
-        m.coords = { x: curX, y: g2StartY };
-        curX += spacing;
-      });
-    }
-
-    // Arrange Generation 3
-    const g3 = this.orderGenerationWithSpouses(genGroups[3]);
-    const g3StartY = g2StartY + ySpacing;
-    if (g3.length > 0) {
-      const spacing = this.options.nodeWidth + 36;
-      const totalWidth = g3.length * spacing;
-      let curX = baseCenterX - (totalWidth / 2);
-      g3.forEach(m => {
-        m.coords = { x: curX, y: g3StartY };
-        curX += spacing;
-      });
-    }
-
-    // Arrange Generation 4
-    const g4 = this.orderGenerationWithSpouses(genGroups[4]);
-    const g4StartY = g3StartY + ySpacing;
-    if (g4.length > 0) {
-      const spacing = this.options.nodeWidth + 36;
-      const totalWidth = g4.length * spacing;
-      let curX = baseCenterX - (totalWidth / 2);
-      g4.forEach(m => {
-        m.coords = { x: curX, y: g4StartY };
-        curX += spacing;
-      });
-    }
+    });
   }
 
   orderGenerationWithSpouses(list) {

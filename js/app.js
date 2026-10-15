@@ -103,6 +103,11 @@ function initTree() {
 function updateBranchDropdown(sel) {
   if (!sel) return;
   const branches = [...new Set(appData.members.map(m => m.branch).filter(Boolean))];
+  if (branches.length <= 1) {
+    sel.classList.add("hidden");
+    return;
+  }
+  sel.classList.remove("hidden");
   sel.innerHTML = '<option value="all">All Lineage Branches</option>';
   branches.forEach(b => { const o = document.createElement("option"); o.value = b; o.textContent = b; sel.appendChild(o); });
 }
@@ -164,6 +169,8 @@ function initMemorialWall() {
 }
 
 /* GALLERY */
+let currentUploadedArchivePhotoBase64 = "";
+
 function initGallery() {
   renderGalleryItems("all");
   document.querySelectorAll(".gallery-filter-btn").forEach(btn => {
@@ -173,17 +180,90 @@ function initGallery() {
       renderGalleryItems(btn.dataset.cat);
     });
   });
+
+  // Archive photo upload
+  const archiveFileInput = document.getElementById("archivePhotoFileInput");
+  const btnChooseArchivePhoto = document.getElementById("btnChooseArchivePhoto");
+  const btnRemoveArchivePhoto = document.getElementById("btnRemoveArchivePhoto");
+  const archivePreviewImg = document.getElementById("archivePhotoPreview");
+  const archivePlaceholder = document.getElementById("archivePhotoPlaceholder");
+
+  const resetArchiveUpload = () => {
+    currentUploadedArchivePhotoBase64 = "";
+    if (archiveFileInput) archiveFileInput.value = "";
+    if (archivePreviewImg) { archivePreviewImg.src = ""; archivePreviewImg.classList.add("hidden"); }
+    if (archivePlaceholder) archivePlaceholder.classList.remove("hidden");
+    if (btnRemoveArchivePhoto) btnRemoveArchivePhoto.classList.add("hidden");
+  };
+
+  if (btnChooseArchivePhoto && archiveFileInput) {
+    btnChooseArchivePhoto.addEventListener("click", () => archiveFileInput.click());
+  }
+
+  if (archiveFileInput) {
+    archiveFileInput.addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      if (!file.type.startsWith("image/")) {
+        alert("Please select a valid image file (PNG, JPG, JPEG, WebP).");
+        return;
+      }
+      try {
+        const compressedBase64 = await compressImage(file, 900, 0.85);
+        currentUploadedArchivePhotoBase64 = compressedBase64;
+        if (archivePreviewImg) {
+          archivePreviewImg.src = compressedBase64;
+          archivePreviewImg.classList.remove("hidden");
+        }
+        if (archivePlaceholder) archivePlaceholder.classList.add("hidden");
+        if (btnRemoveArchivePhoto) btnRemoveArchivePhoto.classList.remove("hidden");
+      } catch (err) {
+        console.error("Archive image processing error", err);
+        alert("Could not process the selected image.");
+      }
+    });
+  }
+
+  if (btnRemoveArchivePhoto) {
+    btnRemoveArchivePhoto.addEventListener("click", resetArchiveUpload);
+  }
+
   const pf = document.getElementById("addPhotoForm");
   if (pf) {
     pf.addEventListener("submit", async (e) => {
       e.preventDefault();
       const title = document.getElementById("photoTitle").value.trim();
-      const image = document.getElementById("photoUrl").value.trim();
-      if (!title || !image) { alert("Please provide a photo title and image URL."); return; }
-      const newPhoto = { id: `img-${Date.now()}`, title, category: document.getElementById("photoCategory").value, year: document.getElementById("photoYear").value.trim() || String(new Date().getFullYear()), image, caption: document.getElementById("photoCaption").value.trim() };
-      appData.gallery.push(newPhoto); saveFamilyData(appData);
+      const urlInput = document.getElementById("photoUrl")?.value.trim() || "";
+      const image = currentUploadedArchivePhotoBase64 || urlInput;
+      if (!title || !image) {
+        alert("Please select a photo or enter an image URL.");
+        return;
+      }
+      const newPhoto = {
+        id: `img-${Date.now()}`,
+        title,
+        category: document.getElementById("photoCategory").value,
+        year: document.getElementById("photoYear").value.trim() || String(new Date().getFullYear()),
+        image,
+        caption: document.getElementById("photoCaption").value.trim()
+      };
+
+      const btn = document.getElementById("btnSubmitArchivePhoto") || pf.querySelector("button[type=submit]");
+      const origText = btn.innerHTML;
+      btn.innerHTML = "Saving photo...";
+      btn.disabled = true;
+
+      appData.gallery.push(newPhoto);
+      saveFamilyData(appData);
       await savePhotoToDB(newPhoto);
-      renderGalleryItems("all"); document.getElementById("addPhotoModal").classList.add("hidden"); pf.reset();
+
+      btn.innerHTML = origText;
+      btn.disabled = false;
+
+      renderGalleryItems("all");
+      document.getElementById("addPhotoModal").classList.add("hidden");
+      pf.reset();
+      resetArchiveUpload();
       alert("Photo added to the family archive!");
     });
   }
@@ -358,6 +438,7 @@ let currentUploadedPhotoBase64 = "";
 function initModalsAndForms() {
   const openAddBtn = document.getElementById("btnOpenAddMember");
   const openAddHeroBtn = document.getElementById("btnHeroAddMember");
+  const openAddMobileBtn = document.getElementById("btnMobileAddMember");
   const addModal = document.getElementById("addMemberModal");
   const closeAddBtn = document.getElementById("btnCloseAddMember");
   const openAdd = () => {
@@ -367,6 +448,7 @@ function initModalsAndForms() {
 
   if (openAddBtn) openAddBtn.addEventListener("click", openAdd);
   if (openAddHeroBtn) openAddHeroBtn.addEventListener("click", openAdd);
+  if (openAddMobileBtn) openAddMobileBtn.addEventListener("click", openAdd);
   if (closeAddBtn) closeAddBtn.addEventListener("click", () => addModal.classList.add("hidden"));
 
   window.addEventListener("click", (e) => {

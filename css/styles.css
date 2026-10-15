@@ -98,6 +98,7 @@ h1, h2, h3, .font-serif-royal { font-family: 'Playfair Display', Georgia, serif;
 .badge-emerald { background:rgba(5,150,105,0.15); border:1px solid rgba(5,150,105,0.4); color:#34d399; }
 .badge-memorial { background:rgba(148,163,184,0.15); border:1px solid rgba(148,163,184,0.3); color:#cbd5e1; }
 .badge-blue { background:rgba(59,130,246,0.15); border:1px solid rgba(59,130,246,0.4); color:#93c5fd; }
+.badge-purple { background:rgba(168,85,247,0.15); border:1px solid rgba(168,85,247,0.4); color:#d8b4fe; }
 
 .btn-gold-glow { position:relative; overflow:hidden; transition:all 0.3s cubic-bezier(0.16,1,0.3,1); }
 .btn-gold-glow:hover { box-shadow:0 0 20px rgba(180,83,9,0.35); transform:translateY(-2px); }
@@ -111,6 +112,15 @@ h1, h2, h3, .font-serif-royal { font-family: 'Playfair Display', Georgia, serif;
   .tree-node-card {
     width: 200px;
     padding: 10px;
+  }
+  /* Prevent iOS automatic zoom on focus while maintaining clean sizing */
+  input[type="text"],
+  input[type="number"],
+  input[type="url"],
+  input[type="email"],
+  select,
+  textarea {
+    font-size: 16px !important;
   }
 }
 
