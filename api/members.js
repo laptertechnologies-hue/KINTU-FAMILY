@@ -84,66 +84,70 @@ export default async function handler(req, res) {
     }
 
     if (req.method === "POST") {
-      const m = req.body;
-      if (!m || !m.id || !m.firstName || !m.lastName) {
-        return res.status(400).json({ error: "Missing required fields" });
+      const items = Array.isArray(req.body) ? req.body : [req.body];
+      if (items.length === 0) {
+        return res.status(400).json({ error: "No member data provided" });
       }
 
-      await client.query(
-        `INSERT INTO family_members (
-          id, first_name, last_name, empaako, gender, generation,
-          birth_year, death_year, is_deceased, branch, location, country,
-          occupation, bio, photo_url, parent_ids, spouse_ids, children_ids
-        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
-        ON CONFLICT (id) DO UPDATE SET
-          first_name = EXCLUDED.first_name,
-          last_name = EXCLUDED.last_name,
-          empaako = EXCLUDED.empaako,
-          gender = EXCLUDED.gender,
-          generation = EXCLUDED.generation,
-          birth_year = EXCLUDED.birth_year,
-          death_year = EXCLUDED.death_year,
-          is_deceased = EXCLUDED.is_deceased,
-          branch = EXCLUDED.branch,
-          location = EXCLUDED.location,
-          country = EXCLUDED.country,
-          occupation = EXCLUDED.occupation,
-          bio = EXCLUDED.bio,
-          photo_url = EXCLUDED.photo_url,
-          parent_ids = EXCLUDED.parent_ids,
-          spouse_ids = EXCLUDED.spouse_ids,
-          children_ids = EXCLUDED.children_ids`,
-        [
-          m.id, m.firstName, m.lastName, m.empaako || "",
-          m.gender || "male", m.generation || 1,
-          m.birthYear || null, m.deathYear || null,
-          m.isDeceased || false, m.branch || "Main Lineage",
-          m.location || "", m.country || "Uganda",
-          m.occupation || "", m.bio || "",
-          m.photo || "", m.parentIds || [],
-          m.spouseIds || [], m.childrenIds || [],
-        ]
-      );
+      for (const m of items) {
+        if (!m || !m.id || !m.firstName || !m.lastName) continue;
 
-      if (m.parentIds && m.parentIds.length > 0) {
-        for (const parentId of m.parentIds) {
-          await client.query(
-            `UPDATE family_members SET children_ids = array_append(array_remove(children_ids, $1), $1) WHERE id = $2`,
-            [m.id, parentId]
-          );
+        await client.query(
+          `INSERT INTO family_members (
+            id, first_name, last_name, empaako, gender, generation,
+            birth_year, death_year, is_deceased, branch, location, country,
+            occupation, bio, photo_url, parent_ids, spouse_ids, children_ids
+          ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
+          ON CONFLICT (id) DO UPDATE SET
+            first_name = EXCLUDED.first_name,
+            last_name = EXCLUDED.last_name,
+            empaako = EXCLUDED.empaako,
+            gender = EXCLUDED.gender,
+            generation = EXCLUDED.generation,
+            birth_year = EXCLUDED.birth_year,
+            death_year = EXCLUDED.death_year,
+            is_deceased = EXCLUDED.is_deceased,
+            branch = EXCLUDED.branch,
+            location = EXCLUDED.location,
+            country = EXCLUDED.country,
+            occupation = EXCLUDED.occupation,
+            bio = EXCLUDED.bio,
+            photo_url = CASE WHEN EXCLUDED.photo_url != '' THEN EXCLUDED.photo_url ELSE family_members.photo_url END,
+            parent_ids = EXCLUDED.parent_ids,
+            spouse_ids = EXCLUDED.spouse_ids,
+            children_ids = EXCLUDED.children_ids`,
+          [
+            m.id, m.firstName, m.lastName, m.empaako || "",
+            m.gender || "male", m.generation || 1,
+            m.birthYear || null, m.deathYear || null,
+            m.isDeceased || false, m.branch || "Main Lineage",
+            m.location || "", m.country || "Uganda",
+            m.occupation || "", m.bio || "",
+            m.photo || "", m.parentIds || [],
+            m.spouseIds || [], m.childrenIds || [],
+          ]
+        );
+
+        if (m.parentIds && m.parentIds.length > 0) {
+          for (const parentId of m.parentIds) {
+            await client.query(
+              `UPDATE family_members SET children_ids = array_append(array_remove(children_ids, $1), $1) WHERE id = $2`,
+              [m.id, parentId]
+            );
+          }
+        }
+
+        if (m.spouseIds && m.spouseIds.length > 0) {
+          for (const spouseId of m.spouseIds) {
+            await client.query(
+              `UPDATE family_members SET spouse_ids = array_append(array_remove(spouse_ids, $1), $1) WHERE id = $2`,
+              [m.id, spouseId]
+            );
+          }
         }
       }
 
-      if (m.spouseIds && m.spouseIds.length > 0) {
-        for (const spouseId of m.spouseIds) {
-          await client.query(
-            `UPDATE family_members SET spouse_ids = array_append(array_remove(spouse_ids, $1), $1) WHERE id = $2`,
-            [m.id, spouseId]
-          );
-        }
-      }
-
-      return res.status(201).json({ success: true, id: m.id });
+      return res.status(201).json({ success: true, count: items.length });
     }
 
     return res.status(405).json({ error: "Method not allowed" });

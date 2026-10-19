@@ -191,14 +191,20 @@ class FamilyTreeEngine {
       return;
     }
 
-    // Find min and max coords
-    const xs = this.members.map(m => (m.coords ? m.coords.x : 0));
-    const minX = Math.min(...xs);
-    const maxX = Math.max(...xs);
-    const centerX = (minX + maxX + this.options.nodeWidth) / 2;
+    // Target the root ancestor (Gen 1) or center of all rendered members
+    const root = this.members.find(m => m.generation === 1 && m.coords);
+    let targetX;
+    if (root) {
+      targetX = root.coords.x + this.options.nodeWidth / 2;
+    } else {
+      const xs = this.members.map(m => (m.coords ? m.coords.x : 0));
+      const minX = Math.min(...xs);
+      const maxX = Math.max(...xs);
+      targetX = (minX + maxX + this.options.nodeWidth) / 2;
+    }
 
     this.zoom = this.options.initialZoom;
-    this.panX = (rect.width / 2) - (centerX * this.zoom);
+    this.panX = (rect.width / 2) - (targetX * this.zoom);
     this.panY = 50;
     this.updateTransform();
   }
@@ -242,14 +248,28 @@ class FamilyTreeEngine {
 
     const startY = 80;
     const ySpacing = 220;
-    const baseCenterX = 1500;
+    const spacing = this.options.nodeWidth + 40;
 
+    const maxInGen = Math.max(...Object.values(genGroups).map(g => g.length), 1);
+    const canvasWidth = Math.max(6000, (maxInGen * spacing) + 1600);
     const sortedGens = Object.keys(genGroups).map(Number).sort((a, b) => a - b);
+    const canvasHeight = Math.max(3000, (sortedGens.length + 1) * ySpacing + 300);
+
+    if (this.svg) {
+      this.svg.style.width = canvasWidth + 'px';
+      this.svg.style.height = canvasHeight + 'px';
+    }
+    if (this.nodesContainer) {
+      this.nodesContainer.style.width = canvasWidth + 'px';
+      this.nodesContainer.style.height = canvasHeight + 'px';
+    }
+
+    const baseCenterX = canvasWidth / 2;
+
     sortedGens.forEach((gen, idx) => {
       const group = this.orderGenerationWithSpouses(genGroups[gen]);
       if (!group.length) return;
       const currentY = startY + (idx * ySpacing);
-      const spacing = this.options.nodeWidth + 40;
       const totalWidth = group.length * spacing;
       let curX = baseCenterX - (totalWidth / 2);
       group.forEach(m => {
@@ -260,9 +280,17 @@ class FamilyTreeEngine {
   }
 
   orderGenerationWithSpouses(list) {
+    // Sort so siblings stay grouped under the same parent, ordered by birth year
+    const sorted = [...list].sort((a, b) => {
+      const fa = (a.parentIds && a.parentIds[0]) || "";
+      const fb = (b.parentIds && b.parentIds[0]) || "";
+      if (fa !== fb) return fa.localeCompare(fb);
+      return (a.birthYear || 9999) - (b.birthYear || 9999);
+    });
+
     const ordered = [];
     const visited = new Set();
-    list.forEach(member => {
+    sorted.forEach(member => {
       if (visited.has(member.id)) return;
       visited.add(member.id);
       ordered.push(member);
@@ -325,7 +353,11 @@ class FamilyTreeEngine {
       1: 'badge-gold',
       2: 'badge-emerald',
       3: 'badge-blue',
-      4: 'badge-purple'
+      4: 'badge-purple',
+      5: 'badge-gold',
+      6: 'badge-emerald',
+      7: 'badge-blue',
+      8: 'badge-purple'
     }[member.generation] || 'badge-gold';
 
     const empaakoOrTrad = member.empaako || member.traditionalName || '';

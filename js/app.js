@@ -25,8 +25,30 @@ document.addEventListener("DOMContentLoaded", async () => {
 async function syncFromDB() {
   const [dbMembers, dbGallery] = await Promise.all([fetchMembersFromDB(), fetchGalleryFromDB()]);
   let changed = false;
-  if (dbMembers !== null && dbMembers.length > 0) { appData.members = dbMembers; changed = true; }
-  if (dbGallery !== null && dbGallery.length > 0) { appData.gallery = dbGallery; changed = true; }
+
+  if (dbMembers !== null) {
+    const memberMap = new Map();
+    // 1. Seed with the complete 148 Ababwijwa lineage records
+    (KINTU_INITIAL_DATA.members || []).forEach(m => memberMap.set(m.id, { ...m }));
+    // 2. Overlay any database members (user added or edited)
+    dbMembers.forEach(m => memberMap.set(m.id, { ...m }));
+
+    const merged = Array.from(memberMap.values());
+    if (merged.length !== appData.members.length || dbMembers.length < KINTU_INITIAL_DATA.members.length) {
+      appData.members = merged;
+      changed = true;
+      // If remote database is missing the historical clan members, seed in background!
+      if (dbMembers.length < KINTU_INITIAL_DATA.members.length) {
+        saveMembersBatchToDB(KINTU_INITIAL_DATA.members).catch(console.warn);
+      }
+    }
+  }
+
+  if (dbGallery !== null && dbGallery.length > 0) {
+    appData.gallery = dbGallery;
+    changed = true;
+  }
+
   if (changed) {
     saveFamilyData(appData);
     treeEngine.setData(appData);
@@ -34,7 +56,10 @@ async function syncFromDB() {
     initMemorialWall();
     renderGalleryItems("all");
     updateHeroCount();
+    const bs = document.getElementById("branchSelectFilter");
+    if (bs) updateBranchDropdown(bs);
   }
+
   const rsvpTotal = await fetchRsvpTotal();
   const rsvpEl = document.getElementById("rsvpConfirmedNumber");
   if (rsvpEl && rsvpTotal > 0) rsvpEl.textContent = rsvpTotal;
@@ -84,8 +109,12 @@ function initTree() {
 
   document.querySelectorAll(".filter-gen-btn").forEach(btn => {
     btn.addEventListener("click", () => {
-      document.querySelectorAll(".filter-gen-btn").forEach(b => { b.classList.remove("bg-amber-600","text-white"); b.classList.add("bg-slate-800","text-slate-300"); });
-      btn.classList.add("bg-amber-600","text-white"); btn.classList.remove("bg-slate-800","text-slate-300");
+      document.querySelectorAll(".filter-gen-btn").forEach(b => {
+        b.classList.remove("bg-amber-700", "text-white");
+        b.classList.add("bg-slate-700", "text-slate-300");
+      });
+      btn.classList.add("bg-amber-700", "text-white");
+      btn.classList.remove("bg-slate-700", "text-slate-300");
       treeEngine.setFilters(btn.dataset.gen, document.getElementById("branchSelectFilter")?.value || "all");
     });
   });
@@ -94,7 +123,7 @@ function initTree() {
   if (bs) {
     updateBranchDropdown(bs);
     bs.addEventListener("change", () => {
-      const a = document.querySelector(".filter-gen-btn.bg-amber-600");
+      const a = document.querySelector(".filter-gen-btn.bg-amber-700");
       treeEngine.setFilters(a ? a.dataset.gen : "all", bs.value);
     });
   }
@@ -693,9 +722,23 @@ function openMemberModal(member) {
   if (locEl) locEl.textContent = member.location || "Location Not Specified";
 
   document.getElementById("modalMemberGenBadge").textContent = `Generation ${member.generation}`;
+  const bb = document.getElementById("modalMemberBranchBadge");
+  if (bb) bb.textContent = member.branch || "Ababwijwa Lineage";
+
   document.getElementById("modalMemberDates").innerHTML = member.isDeceased
     ? `Born ${member.birthYear || "Unknown"} &ndash; Passed ${member.deathYear || "Unknown"}`
     : `Born ${member.birthYear || "Unknown"}`;
+
+  const bioContainer = document.getElementById("modalMemberBioContainer");
+  const bioText = document.getElementById("modalMemberBioText");
+  if (bioContainer && bioText) {
+    if (member.bio) {
+      bioText.textContent = member.bio;
+      bioContainer.classList.remove("hidden");
+    } else {
+      bioContainer.classList.add("hidden");
+    }
+  }
 
   const rc = document.getElementById("modalMemberRelations");
   let html = "";

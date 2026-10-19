@@ -128,7 +128,7 @@
         <h2 class="text-3xl sm:text-4xl font-bold font-serif-royal text-white mt-1 mb-3">Ancestral Roots in Bunyoro-Kitara</h2>
         <p class="text-xs sm:text-sm text-slate-400 leading-relaxed">The Kintu family draws its identity from the ancient kingdom of Bunyoro-Kitara. Our heritage is rooted in the royal traditions, Empaako praise names, communal solidarity, and love for knowledge.</p>
       </div>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-14">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
         <div class="bg-slate-800/50 rounded-2xl p-6 border border-slate-700 flex items-start gap-4 reveal-fade-left">
           <div class="w-10 h-10 rounded-lg bg-amber-900/30 flex items-center justify-center text-amber-600 shrink-0">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
@@ -157,6 +157,28 @@
             <h3 class="text-base font-bold text-white mb-1">Traditional Salutation</h3>
             <p class="text-xs text-slate-300 font-semibold mb-1">"Oraire ota, Baana ba Kintu!"</p>
             <p class="text-xs text-slate-400 leading-relaxed">Warm greeting exchanged between descendants to affirm shared bloodline, respect, and mutual kinship.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 1986 Handwritten Clan Archive Documentation Banner -->
+      <div class="p-6 rounded-2xl bg-gradient-to-r from-amber-950/40 via-slate-900 to-slate-900 border border-amber-600/30 mb-14 reveal-fade-up">
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div class="flex items-start gap-3">
+            <div class="w-10 h-10 rounded-xl bg-amber-600/20 border border-amber-600/40 text-amber-500 flex items-center justify-center shrink-0">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+            </div>
+            <div>
+              <span class="text-[10px] font-extrabold uppercase tracking-widest text-amber-500">Historical Clan Record (1986)</span>
+              <h3 class="text-lg font-bold text-white font-serif-royal">Endugiiro yoruganda rwaba - Isiitwe: Ababwijwa</h3>
+              <p class="text-xs text-slate-300 mt-1 max-w-2xl leading-relaxed">
+                Compiled in 1986 by clan historians <strong class="text-white">Mr. Mbabazi Twesige Tadeo (Amooti)</strong> with consultation of <strong class="text-white">Mr. Katotera Jonathan Biferamunda (Akiiki)</strong>. This digital portal preserves all <strong>148 documented members</strong> across 8 generations, spanning founding patriarch Banjwa down to the contemporary great-grandchildren.
+              </p>
+            </div>
+          </div>
+          <div class="shrink-0 flex items-center gap-2">
+            <span class="px-3 py-1.5 rounded-lg bg-amber-600/20 border border-amber-600/30 text-amber-400 text-xs font-bold">148 Relatives Cataloged</span>
+            <span class="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 text-xs font-bold">8 Generations</span>
           </div>
         </div>
       </div>
@@ -208,13 +230,17 @@
         </button>
       </div>
       <div class="mb-4 p-4 rounded-2xl bg-slate-800/50 border border-slate-700 flex flex-wrap items-center justify-between gap-4">
-        <div class="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
-          <span class="text-xs font-bold text-slate-400 uppercase tracking-wider mr-1">Generation:</span>
-          <button class="filter-gen-btn px-3 py-1 rounded-lg text-xs font-semibold bg-amber-700 text-white transition" data-gen="all">All</button>
-          <button class="filter-gen-btn px-3 py-1 rounded-lg text-xs font-semibold bg-slate-700 text-slate-300 hover:bg-slate-600 transition" data-gen="1">G1: Roots</button>
-          <button class="filter-gen-btn px-3 py-1 rounded-lg text-xs font-semibold bg-slate-700 text-slate-300 hover:bg-slate-600 transition" data-gen="2">G2: Elders</button>
-          <button class="filter-gen-btn px-3 py-1 rounded-lg text-xs font-semibold bg-slate-700 text-slate-300 hover:bg-slate-600 transition" data-gen="3">G3: Children</button>
-          <button class="filter-gen-btn px-3 py-1 rounded-lg text-xs font-semibold bg-slate-700 text-slate-300 hover:bg-slate-600 transition" data-gen="4">G4: Youth</button>
+        <div class="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+          <span class="text-xs font-bold text-slate-400 uppercase tracking-wider mr-1 shrink-0">Generation:</span>
+          <button class="filter-gen-btn px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-700 text-white transition shrink-0" data-gen="all">All Gens</button>
+          <button class="filter-gen-btn px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-700 text-slate-300 hover:bg-slate-600 transition shrink-0" data-gen="1">G1: Roots</button>
+          <button class="filter-gen-btn px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-700 text-slate-300 hover:bg-slate-600 transition shrink-0" data-gen="2">G2: Elders</button>
+          <button class="filter-gen-btn px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-700 text-slate-300 hover:bg-slate-600 transition shrink-0" data-gen="3">G3</button>
+          <button class="filter-gen-btn px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-700 text-slate-300 hover:bg-slate-600 transition shrink-0" data-gen="4">G4: Patriarchs</button>
+          <button class="filter-gen-btn px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-700 text-slate-300 hover:bg-slate-600 transition shrink-0" data-gen="5">G5: Fathers</button>
+          <button class="filter-gen-btn px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-700 text-slate-300 hover:bg-slate-600 transition shrink-0" data-gen="6">G6: Children</button>
+          <button class="filter-gen-btn px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-700 text-slate-300 hover:bg-slate-600 transition shrink-0" data-gen="7">G7: Grandchildren</button>
+          <button class="filter-gen-btn px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-700 text-slate-300 hover:bg-slate-600 transition shrink-0" data-gen="8">G8: Modern</button>
         </div>
         <div class="flex items-center gap-3 w-full sm:w-auto">
           <select id="branchSelectFilter" class="bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:border-amber-600 min-w-[150px]">
@@ -229,12 +255,13 @@
       </div>
       <div id="treeContainer"></div>
       <div class="mt-4 flex flex-wrap items-center justify-between text-[11px] text-slate-500 px-2 gap-2">
-        <div class="flex items-center gap-4">
-          <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-700 inline-block"></span> Generation 1</span>
-          <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-blue-700 inline-block"></span> Generation 2</span>
-          <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-slate-500 inline-block"></span> Generation 3+</span>
+        <div class="flex flex-wrap items-center gap-4">
+          <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-600 inline-block"></span> G1-G2: Roots &amp; Elders</span>
+          <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-blue-600 inline-block"></span> G3-G5: Patriarchs &amp; Clan Fathers</span>
+          <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-600 inline-block"></span> G6-G7: Children &amp; Descendants</span>
+          <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-purple-600 inline-block"></span> G8: Modern Youth</span>
         </div>
-        <span>Dashed: Marriage &nbsp; Curve: Descent</span>
+        <span>Dashed: Marriage &nbsp;&bull;&nbsp; Curve: Descent</span>
       </div>
     </div>
   </section>
@@ -251,11 +278,15 @@
         <div class="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full sm:w-auto">
           <input type="text" id="directorySearch" placeholder="Search by name, Empaako, address..." class="bg-slate-800 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2.5 focus:outline-none focus:border-amber-600 w-full sm:w-60">
           <select id="directoryRoleFilter" class="bg-slate-800 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2.5 focus:outline-none focus:border-amber-600 shrink-0">
-            <option value="all">All Generations</option>
-            <option value="1">Gen 1 (Roots)</option>
-            <option value="2">Gen 2 (Elders)</option>
-            <option value="3">Gen 3 (Children)</option>
-            <option value="4">Gen 4 (Youth)</option>
+            <option value="all">All Generations (1–8)</option>
+            <option value="1">Gen 1: Patriarch Banjwa</option>
+            <option value="2">Gen 2: Katotera the Elder</option>
+            <option value="3">Gen 3: Kalyegira</option>
+            <option value="4">Gen 4: Matia Kintu &amp; Brothers</option>
+            <option value="5">Gen 5: Clan Fathers (Biferamunda, Birihanyomyo, etc.)</option>
+            <option value="6">Gen 6: Children &amp; Lineage Elders (51)</option>
+            <option value="7">Gen 7: Grandchildren (80)</option>
+            <option value="8">Gen 8: Modern Generation (5)</option>
           </select>
         </div>
       </div>
@@ -621,7 +652,10 @@
           <img id="modalMemberPhoto" src="" class="w-20 h-20 rounded-2xl object-cover border-2 border-amber-600/40 shadow-lg hidden shrink-0" alt="Profile">
           <div id="modalMemberPhotoFallback" class="w-20 h-20 rounded-2xl bg-slate-800 border-2 border-slate-700 flex items-center justify-center text-amber-500 font-bold text-2xl shadow-lg shrink-0"></div>
           <div class="min-w-0 flex-1">
-            <span id="modalMemberGenBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-500/15 border border-amber-500/30 text-amber-400 mb-1 inline-block"></span>
+            <div class="flex flex-wrap items-center gap-1.5 mb-1">
+              <span id="modalMemberGenBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-500/15 border border-amber-500/30 text-amber-400 inline-block"></span>
+              <span id="modalMemberBranchBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-800 border border-slate-700 text-slate-300 inline-block"></span>
+            </div>
             <h3 id="modalMemberName" class="text-xl sm:text-2xl font-bold text-white font-serif-royal truncate"></h3>
             <p id="modalMemberTradName" class="text-xs text-amber-400 font-semibold mt-0.5"></p>
             <p id="modalMemberDates" class="text-xs text-slate-400 mt-1"></p>
@@ -630,6 +664,14 @@
               <span id="modalMemberLocationText"></span>
             </p>
           </div>
+        </div>
+        <!-- Clan Record / Biography Notes -->
+        <div id="modalMemberBioContainer" class="hidden pt-4 border-t border-slate-800">
+          <h4 class="text-xs font-bold text-amber-500 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 inline text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <span>Clan Record Notes &amp; Lineage Info</span>
+          </h4>
+          <p id="modalMemberBioText" class="text-xs text-slate-300 leading-relaxed bg-slate-800/60 p-3 rounded-xl border border-slate-700/60"></p>
         </div>
         <div class="pt-4 border-t border-slate-800">
           <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2.5">Family Connections</h4>
