@@ -5,265 +5,1009 @@
  */
 
 let appData = null;
-let treeEngine = null;
 let selectedMember = null;
+let currentSlideshowIndex = 0;
+let slideshowInterval = null;
+let currentFilterGen = "all";
+let currentSearchQuery = "";
+let currentUploadedPhotoBase64 = "";
+let currentEditPhotoBase64 = "";
 
 document.addEventListener("DOMContentLoaded", async () => {
   appData = getFamilyData();
-  initTree();
+  initHeroSlideshow();
+  initGenerationContainers();
   initHistoryTimeline();
   initMemorialWall();
   initGallery();
   initDirectory();
+  initMinutesSection();
   initReunion();
   initModalsAndForms();
+  initEditMemberModal();
   initThemeAndScroll();
   await syncFromDB();
-  console.log("Kintu Family Heritage Portal initialized.");
+  console.log("Kintu Family Heritage Portal initialized successfully.");
 });
 
-async function syncFromDB() {
-  const [dbMembers, dbGallery] = await Promise.all([fetchMembersFromDB(), fetchGalleryFromDB()]);
-  let changed = false;
+/* -------------------------------------------------------
+   1. HERO SLIDESHOW
+------------------------------------------------------- */
+function initHeroSlideshow() {
+  const slides = document.querySelectorAll(".hero-slide");
+  const dots = document.querySelectorAll(".hero-dot");
+  if (!slides.length) return;
 
-  if (dbMembers !== null) {
-    const memberMap = new Map();
-    // 1. Seed with the complete 148 Ababwijwa lineage records
-    (KINTU_INITIAL_DATA.members || []).forEach(m => memberMap.set(m.id, { ...m }));
-    // 2. Overlay any database members (user added or edited)
-    dbMembers.forEach(m => memberMap.set(m.id, { ...m }));
-
-    const merged = Array.from(memberMap.values());
-    if (merged.length !== appData.members.length || dbMembers.length < KINTU_INITIAL_DATA.members.length) {
-      appData.members = merged;
-      changed = true;
-      // If remote database is missing the historical clan members, seed in background!
-      if (dbMembers.length < KINTU_INITIAL_DATA.members.length) {
-        saveMembersBatchToDB(KINTU_INITIAL_DATA.members).catch(console.warn);
-      }
-    }
-  }
-
-  if (dbGallery !== null && dbGallery.length > 0) {
-    appData.gallery = dbGallery;
-    changed = true;
-  }
-
-  if (changed) {
-    saveFamilyData(appData);
-    treeEngine.setData(appData);
-    initDirectory();
-    initMemorialWall();
-    renderGalleryItems("all");
-    updateHeroCount();
-    const bs = document.getElementById("branchSelectFilter");
-    if (bs) updateBranchDropdown(bs);
-  }
-
-  const rsvpTotal = await fetchRsvpTotal();
-  const rsvpEl = document.getElementById("rsvpConfirmedNumber");
-  if (rsvpEl && rsvpTotal > 0) rsvpEl.textContent = rsvpTotal;
-}
-
-/* TREE */
-function initTree() {
-  treeEngine = new FamilyTreeEngine("treeContainer", { onNodeClick: (m) => openMemberModal(m) });
-  treeEngine.setData(appData);
-  const si = document.getElementById("treeSearchInput");
-  const sr = document.getElementById("treeSearchResults");
-  if (si && sr) {
-    si.addEventListener("input", (e) => {
-      const q = e.target.value.trim().toLowerCase();
-      if (!q || !appData.members.length) { sr.classList.add("hidden"); return; }
-      const matches = appData.members.filter(m =>
-        (m.firstName && m.firstName.toLowerCase().includes(q)) ||
-        (m.lastName && m.lastName.toLowerCase().includes(q)) ||
-        (m.empaako && m.empaako.toLowerCase().includes(q)) ||
-        (m.location && m.location.toLowerCase().includes(q))
-      ).slice(0, 6);
-      sr.innerHTML = matches.length === 0
-        ? `<div class="p-3 text-xs text-slate-400">No relatives found for "${q}"</div>`
-        : matches.map(m => `
-            <div class="p-2.5 hover:bg-slate-800/80 cursor-pointer flex items-center justify-between border-b border-slate-700/40 last:border-0" data-member-id="${m.id}">
-              <div class="flex items-center gap-2">
-                <div class="w-7 h-7 rounded-md bg-slate-800 flex items-center justify-center text-slate-300 text-xs font-bold overflow-hidden">
-                  ${m.photo ? `<img src="${m.photo}" class="w-7 h-7 rounded-md object-cover">` : m.firstName[0]}
-                </div>
-                <div>
-                  <div class="text-xs font-semibold text-white">${m.firstName} ${m.lastName}</div>
-                  <div class="text-[10px] text-amber-500">Gen ${m.generation} &bull; ${m.location || "Bunyoro-Kitara"}</div>
-                </div>
-              </div>
-              <span class="text-[10px] text-slate-400">Jump &rarr;</span>
-            </div>`).join("");
-      sr.querySelectorAll("[data-member-id]").forEach(el =>
-        el.addEventListener("click", () => {
-          treeEngine.focusOnMember(el.dataset.memberId);
-          sr.classList.add("hidden"); si.value = "";
-        })
-      );
-      sr.classList.remove("hidden");
+  function goToSlide(index) {
+    slides.forEach((s, i) => {
+      s.classList.toggle("active", i === index);
     });
-    document.addEventListener("click", (e) => { if (!si.contains(e.target) && !sr.contains(e.target)) sr.classList.add("hidden"); });
+    dots.forEach((d, i) => {
+      d.classList.toggle("active", i === index);
+    });
+    currentSlideshowIndex = index;
   }
 
-  document.querySelectorAll(".filter-gen-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      document.querySelectorAll(".filter-gen-btn").forEach(b => {
-        b.classList.remove("bg-amber-700", "text-white");
-        b.classList.add("bg-slate-700", "text-slate-300");
-      });
-      btn.classList.add("bg-amber-700", "text-white");
-      btn.classList.remove("bg-slate-700", "text-slate-300");
-      treeEngine.setFilters(btn.dataset.gen, document.getElementById("branchSelectFilter")?.value || "all");
+  function nextSlide() {
+    const next = (currentSlideshowIndex + 1) % slides.length;
+    goToSlide(next);
+  }
+
+  // Dots click handler
+  dots.forEach((dot) => {
+    dot.addEventListener("click", () => {
+      const idx = parseInt(dot.dataset.slide) || 0;
+      goToSlide(idx);
+      resetSlideshowTimer();
     });
   });
 
-  const bs = document.getElementById("branchSelectFilter");
-  if (bs) {
-    updateBranchDropdown(bs);
-    bs.addEventListener("change", () => {
-      const a = document.querySelector(".filter-gen-btn.bg-amber-700");
-      treeEngine.setFilters(a ? a.dataset.gen : "all", bs.value);
+  function resetSlideshowTimer() {
+    if (slideshowInterval) clearInterval(slideshowInterval);
+    slideshowInterval = setInterval(nextSlide, 5500);
+  }
+
+  resetSlideshowTimer();
+}
+
+/* -------------------------------------------------------
+   2. GENERATION CONTAINERS & DIRECTORY (Replaces 2D Canvas)
+------------------------------------------------------- */
+const GENERATION_METADATA = {
+  1: {
+    title: "Generation 1: Ancestral Roots",
+    era: "c. 1898 &ndash; Founding Patriarchs",
+    desc: "Earliest recorded forebear Banjwa, planting the bedrock of the Ababwijwa lineage in Bunyoro-Kitara.",
+    accent: "gen-1-accent",
+    badge: "badge-gold-light"
+  },
+  2: {
+    title: "Generation 2: The Elders",
+    era: "c. 1900 &ndash; Clan Custodians",
+    desc: "Katotera (the elder), guiding the homestead through agricultural stewardship and kinship traditions.",
+    accent: "gen-2-accent",
+    badge: "badge-blue-light"
+  },
+  3: {
+    title: "Generation 3: Forebears",
+    era: "c. 1910 &ndash; Lineage Pillars",
+    desc: "Kalyegira and forebears, laying the bridge between ancestral homesteads and emerging Ugandan society.",
+    accent: "gen-3-accent",
+    badge: "badge-green-light"
+  },
+  4: {
+    title: "Generation 4: The Great Patriarchs",
+    era: "c. 1920s &ndash; Era of Matia Kintu",
+    desc: "Patriarch Matia Kintu, Isoke, Kasingo, Byamukama, and brothers who expanded the branches.",
+    accent: "gen-4-accent",
+    badge: "badge-purple-light"
+  },
+  5: {
+    title: "Generation 5: Clan Fathers & Lineage Pillars",
+    era: "c. 1921 &ndash; 1990",
+    desc: "Erifazi Biferamunda, Yosiya Birihanyomyo (Heir/Mugwetwa), Yostance Rukagyaha, Tereza Nyamusisi, Manueri Kalyaisoke.",
+    accent: "gen-5-accent",
+    badge: "badge-gold-light"
+  },
+  6: {
+    title: "Generation 6: Children & Lineage Elders",
+    era: "c. 1950s &ndash; Contemporary Elders",
+    desc: "51 documented relatives across Uganda and diaspora, expanding modern leadership, education, and family stewardship.",
+    accent: "gen-6-accent",
+    badge: "badge-blue-light"
+  },
+  7: {
+    title: "Generation 7: Grandchildren & Living Descendants",
+    era: "c. 1970s &ndash; 2000s",
+    desc: "80 documented relatives, carrying the torch of Empaako, professional excellence, and family unity across the globe.",
+    accent: "gen-7-accent",
+    badge: "badge-green-light"
+  },
+  8: {
+    title: "Generation 8: Youth & Next Generation",
+    era: "c. 2000s &ndash; Present",
+    desc: "Modern great-grandchildren and youth, inheriting the rich legacy and digital archive of the Kintu family.",
+    accent: "gen-8-accent",
+    badge: "badge-purple-light"
+  }
+};
+
+function initGenerationContainers() {
+  renderGenerationContainers();
+
+  // Search input in generation section
+  const searchInput = document.getElementById("genContainerSearch");
+  if (searchInput) {
+    searchInput.addEventListener("input", (e) => {
+      currentSearchQuery = e.target.value.trim().toLowerCase();
+      renderGenerationContainers(currentSearchQuery, currentFilterGen);
+    });
+  }
+
+  // Generation filter buttons
+  document.querySelectorAll("#generationFilterRow .filter-gen-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll("#generationFilterRow .filter-gen-btn").forEach((b) => {
+        b.classList.remove("bg-amber-700", "text-white", "font-bold");
+        b.classList.add("bg-slate-100", "text-slate-700", "font-semibold");
+      });
+      btn.classList.add("bg-amber-700", "text-white", "font-bold");
+      btn.classList.remove("bg-slate-100", "text-slate-700", "font-semibold");
+
+      currentFilterGen = btn.dataset.gen || "all";
+      renderGenerationContainers(currentSearchQuery, currentFilterGen);
+    });
+  });
+}
+
+function renderGenerationContainers(query = "", filterGen = "all") {
+  const container = document.getElementById("generationContainers");
+  if (!container) return;
+
+  const members = appData.members || [];
+  let html = "";
+  let totalVisible = 0;
+
+  for (let gen = 1; gen <= 8; gen++) {
+    if (filterGen !== "all" && String(filterGen) !== String(gen)) {
+      continue;
+    }
+
+    const genMeta = GENERATION_METADATA[gen] || {
+      title: `Generation ${gen}`,
+      era: "Family Lineage",
+      desc: "Descendants of the Kintu Lineage.",
+      accent: `gen-${gen}-accent`,
+      badge: "badge-slate-light"
+    };
+
+    let genMembers = members.filter((m) => (m.generation || 1) === gen);
+
+    if (query) {
+      genMembers = genMembers.filter((m) =>
+        (m.firstName && m.firstName.toLowerCase().includes(query)) ||
+        (m.lastName && m.lastName.toLowerCase().includes(query)) ||
+        (m.empaako && m.empaako.toLowerCase().includes(query)) ||
+        (m.location && m.location.toLowerCase().includes(query)) ||
+        (m.bio && m.bio.toLowerCase().includes(query))
+      );
+    }
+
+    if (query && genMembers.length === 0) {
+      continue; // Skip empty generations when searching
+    }
+
+    totalVisible += genMembers.length;
+    const isExpanded = query !== "" || filterGen !== "all" || gen <= 5;
+
+    html += `
+      <div class="gen-container bg-white border border-slate-200 rounded-3xl shadow-sm overflow-hidden" data-gen="${gen}">
+        <!-- Container Header -->
+        <div class="gen-container-header p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer select-none border-b border-slate-100" onclick="toggleGenerationContainer(${gen})">
+          <div class="flex items-center gap-3.5">
+            <div class="w-10 h-10 rounded-2xl bg-amber-100 border border-amber-300 text-amber-800 flex items-center justify-center font-extrabold text-sm shadow-sm shrink-0">
+              G${gen}
+            </div>
+            <div>
+              <div class="flex flex-wrap items-center gap-2">
+                <h3 class="text-lg sm:text-xl font-bold font-serif-royal text-slate-900">${genMeta.title}</h3>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${genMeta.badge}">
+                  ${genMembers.length} ${genMembers.length === 1 ? "Relative" : "Relatives"}
+                </span>
+              </div>
+              <p class="text-xs text-slate-500 mt-0.5">${genMeta.era} &bull; ${genMeta.desc}</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 self-end sm:self-center shrink-0">
+            <span class="text-xs text-amber-700 font-bold hidden sm:inline" id="genToggleLabel-${gen}">${isExpanded ? "Collapse" : "Expand"}</span>
+            <svg id="genToggleIcon-${gen}" class="w-5 h-5 text-slate-400 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Container Body / Member Cards Grid -->
+        <div id="genBody-${gen}" class="p-5 sm:p-6 bg-slate-50/50 ${isExpanded ? "" : "hidden"}">
+          ${genMembers.length === 0 ? `
+            <div class="py-8 text-center text-xs text-slate-400">
+              No relatives found matching "${query}" in Generation ${gen}.
+            </div>
+          ` : `
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              ${genMembers.map(m => renderMemberCardHTML(m, genMeta.accent)).join("")}
+            </div>
+          `}
+        </div>
+      </div>
+    `;
+  }
+
+  if (totalVisible === 0) {
+    html = `
+      <div class="p-12 text-center bg-white rounded-3xl border border-slate-200 shadow-sm">
+        <div class="w-14 h-14 rounded-2xl bg-amber-50 text-amber-700 flex items-center justify-center mx-auto mb-3">
+          <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        </div>
+        <h4 class="text-lg font-bold text-slate-900 mb-1">No relatives found</h4>
+        <p class="text-xs text-slate-500 max-w-md mx-auto mb-5">
+          We couldn't find anyone matching "${query}". Try searching by first name, surname, or Empaako praise name.
+        </p>
+        <button onclick="document.getElementById('genContainerSearch').value = ''; renderGenerationContainers();" class="px-4 py-2 rounded-xl bg-amber-700 text-white text-xs font-bold shadow-sm transition">
+          Clear Search Filter
+        </button>
+      </div>
+    `;
+  }
+
+  container.innerHTML = html;
+}
+
+function renderMemberCardHTML(m, accentClass) {
+  const childCount = m.childrenIds ? m.childrenIds.length : 0;
+  const avatarFallback = m.firstName ? m.firstName.charAt(0).toUpperCase() : "?";
+
+  return `
+    <div class="gen-member-card ${accentClass}" onclick="openMemberModalById('${m.id}')">
+      <div>
+        <!-- Top Info Row -->
+        <div class="flex items-start gap-3 mb-3">
+          ${m.photo ? `
+            <img src="${m.photo}" class="w-12 h-12 rounded-xl object-cover border border-slate-200 shadow-sm shrink-0" alt="${m.firstName}">
+          ` : `
+            <div class="w-12 h-12 rounded-xl bg-amber-100 border border-amber-200 text-amber-800 flex items-center justify-center font-extrabold text-lg shrink-0 shadow-sm">
+              ${avatarFallback}
+            </div>
+          `}
+          <div class="min-w-0 flex-1">
+            <h4 class="text-sm font-bold text-slate-900 truncate font-serif-royal">${m.firstName} ${m.lastName}</h4>
+            ${m.empaako ? `
+              <span class="inline-block text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md mt-0.5">
+                "${m.empaako}"
+              </span>
+            ` : ""}
+            <p class="text-[11px] text-slate-500 mt-1">
+              ${m.isDeceased ? `${m.birthYear || "Unknown"} &ndash; ${m.deathYear || "Passed"}` : `b. ${m.birthYear || "Unknown"}`}
+            </p>
+          </div>
+        </div>
+
+        <!-- Location -->
+        <div class="text-[11px] text-slate-600 flex items-center gap-1.5 mb-2 truncate">
+          <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          <span class="truncate">${m.location || "Bunyoro-Kitara, Uganda"}</span>
+        </div>
+      </div>
+
+      <!-- Bottom Status & Actions -->
+      <div class="pt-2.5 mt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
+        <span class="font-semibold text-slate-600 flex items-center gap-1">
+          <span class="text-amber-700 font-bold">${childCount}</span> ${childCount === 1 ? "child" : "children"}
+        </span>
+        <span class="text-amber-700 font-bold hover:underline flex items-center gap-1">
+          View &rarr;
+        </span>
+      </div>
+    </div>
+  `;
+}
+
+function toggleGenerationContainer(gen) {
+  const body = document.getElementById(`genBody-${gen}`);
+  const icon = document.getElementById(`genToggleIcon-${gen}`);
+  const label = document.getElementById(`genToggleLabel-${gen}`);
+  if (!body) return;
+
+  const isHidden = body.classList.contains("hidden");
+  body.classList.toggle("hidden", !isHidden);
+  if (icon) icon.classList.toggle("rotate-180", isHidden);
+  if (label) label.textContent = isHidden ? "Collapse" : "Expand";
+}
+
+function expandAllGenerations() {
+  for (let g = 1; g <= 8; g++) {
+    const body = document.getElementById(`genBody-${g}`);
+    const icon = document.getElementById(`genToggleIcon-${g}`);
+    const label = document.getElementById(`genToggleLabel-${g}`);
+    if (body) body.classList.remove("hidden");
+    if (icon) icon.classList.add("rotate-180");
+    if (label) label.textContent = "Collapse";
+  }
+}
+
+function collapseAllGenerations() {
+  for (let g = 1; g <= 8; g++) {
+    const body = document.getElementById(`genBody-${g}`);
+    const icon = document.getElementById(`genToggleIcon-${g}`);
+    const label = document.getElementById(`genToggleLabel-${g}`);
+    if (body) body.classList.add("hidden");
+    if (icon) icon.classList.remove("rotate-180");
+    if (label) label.textContent = "Expand";
+  }
+}
+
+function openMemberModalById(id) {
+  const member = appData.members.find((m) => m.id === id);
+  if (member) openMemberModal(member);
+}
+
+/* -------------------------------------------------------
+   3. MEMBER PROFILE MODAL & CONTEXTUAL ACTIONS
+------------------------------------------------------- */
+function openMemberModal(member) {
+  selectedMember = member;
+  const modal = document.getElementById("memberProfileModal");
+  if (!modal) return;
+
+  const pe = document.getElementById("modalMemberPhoto");
+  const fe = document.getElementById("modalMemberPhotoFallback");
+  if (member.photo) {
+    pe.src = member.photo;
+    pe.classList.remove("hidden");
+    fe?.classList.add("hidden");
+  } else {
+    pe.classList.add("hidden");
+    if (fe) {
+      fe.classList.remove("hidden");
+      fe.textContent = member.firstName ? member.firstName.charAt(0).toUpperCase() : "?";
+    }
+  }
+
+  document.getElementById("modalMemberName").textContent = `${member.firstName} ${member.lastName}`;
+  const ee = document.getElementById("modalMemberTradName");
+  if (member.empaako) {
+    ee.textContent = `Empaako: "${member.empaako}"`;
+    ee.classList.remove("hidden");
+  } else {
+    ee.classList.add("hidden");
+  }
+
+  const locEl = document.getElementById("modalMemberLocationText");
+  if (locEl) locEl.textContent = member.location || "Bunyoro-Kitara, Uganda";
+
+  document.getElementById("modalMemberGenBadge").textContent = `Generation ${member.generation}`;
+  const bb = document.getElementById("modalMemberBranchBadge");
+  if (bb) bb.textContent = member.branch || "Ababwijwa Lineage";
+
+  document.getElementById("modalMemberDates").innerHTML = member.isDeceased
+    ? `Born ${member.birthYear || "Unknown"} &ndash; Passed ${member.deathYear || "Passed"}`
+    : `Born ${member.birthYear || "Unknown"}`;
+
+  const bioContainer = document.getElementById("modalMemberBioContainer");
+  const bioText = document.getElementById("modalMemberBioText");
+  if (bioContainer && bioText) {
+    if (member.bio) {
+      bioText.textContent = member.bio;
+      bioContainer.classList.remove("hidden");
+    } else {
+      bioContainer.classList.add("hidden");
+    }
+  }
+
+  // Relations Section
+  const rc = document.getElementById("modalMemberRelations");
+  let html = "";
+
+  // Parents
+  if (member.parentIds && member.parentIds.length) {
+    const parents = member.parentIds.map((id) => appData.members.find((m) => m.id === id)).filter(Boolean);
+    if (parents.length) {
+      html += buildInteractiveRelSection("Parents", parents);
+    }
+  }
+
+  // Spouse
+  if (member.spouseIds && member.spouseIds.length) {
+    const spouses = member.spouseIds.map((id) => appData.members.find((m) => m.id === id)).filter(Boolean);
+    if (spouses.length) {
+      html += buildInteractiveRelSection("Spouse / Partner", spouses);
+    }
+  }
+
+  // Direct Children
+  if (member.childrenIds && member.childrenIds.length) {
+    const children = member.childrenIds.map((id) => appData.members.find((m) => m.id === id)).filter(Boolean);
+    if (children.length) {
+      html += buildInteractiveChildrenSection(`Direct Children (${children.length})`, children);
+    }
+  }
+
+  rc.innerHTML = html || '<p class="text-xs text-slate-400 italic">No direct connections recorded yet.</p>';
+
+  // Wire up contextual buttons
+  const btnAddChild = document.getElementById("btnModalAddChild");
+  const btnAddSpouse = document.getElementById("btnModalAddSpouse");
+  const btnEditMember = document.getElementById("btnModalEditMember");
+
+  if (btnAddChild) {
+    btnAddChild.onclick = () => {
+      modal.classList.add("hidden");
+      triggerAddChildToMember(member);
+    };
+  }
+
+  if (btnAddSpouse) {
+    btnAddSpouse.onclick = () => {
+      modal.classList.add("hidden");
+      triggerAddSpouseToMember(member);
+    };
+  }
+
+  if (btnEditMember) {
+    btnEditMember.onclick = () => {
+      modal.classList.add("hidden");
+      openEditMemberModal(member);
+    };
+  }
+
+  modal.classList.remove("hidden");
+}
+
+function buildInteractiveRelSection(label, people) {
+  return `
+    <div class="mb-3">
+      <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">${label}</span>
+      <div class="flex flex-wrap gap-2">
+        ${people.map(p => `
+          <button class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-amber-100 text-slate-800 hover:text-amber-900 border border-slate-200 text-xs font-semibold transition flex items-center gap-1.5 shadow-sm" onclick="openMemberModalById('${p.id}')">
+            <span>${p.firstName} ${p.lastName}</span>
+            ${p.empaako ? `<span class="text-[10px] text-amber-800 font-bold">(${p.empaako})</span>` : ""}
+          </button>
+        `).join("")}
+      </div>
+    </div>
+  `;
+}
+
+function buildInteractiveChildrenSection(label, children) {
+  return `
+    <div class="mb-2">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">${label}</span>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        ${children.map(c => `
+          <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 hover:border-amber-400 hover:bg-amber-50/50 cursor-pointer transition flex items-center justify-between" onclick="openMemberModalById('${c.id}')">
+            <div class="min-w-0 pr-2">
+              <span class="text-xs font-bold text-slate-900 block truncate">${c.firstName} ${c.lastName}</span>
+              <span class="text-[10px] text-slate-500 block">Gen ${c.generation}${c.empaako ? ` &bull; "${c.empaako}"` : ""}</span>
+            </div>
+            <span class="text-[11px] text-amber-700 font-bold shrink-0">&rarr;</span>
+          </div>
+        `).join("")}
+      </div>
+    </div>
+  `;
+}
+
+function triggerAddChildToMember(parent) {
+  populateParentDropdowns();
+  const parentSelect = document.getElementById("regParent");
+  if (parentSelect) {
+    parentSelect.value = parent.id;
+  }
+  const notice = document.getElementById("regParentNotice");
+  if (notice) {
+    notice.textContent = `Adding child of ${parent.firstName} ${parent.lastName}. Generation will be auto-set to Gen ${Math.min((parent.generation || 1) + 1, 8)}.`;
+  }
+  const addModalTitle = document.getElementById("addMemberModalTitle");
+  if (addModalTitle) {
+    addModalTitle.textContent = `Add Child to ${parent.firstName} ${parent.lastName}`;
+  }
+  document.getElementById("addMemberModal").classList.remove("hidden");
+}
+
+function triggerAddSpouseToMember(spouse) {
+  populateParentDropdowns();
+  const spouseSelect = document.getElementById("regSpouse");
+  if (spouseSelect) {
+    spouseSelect.value = spouse.id;
+  }
+  const addModalTitle = document.getElementById("addMemberModalTitle");
+  if (addModalTitle) {
+    addModalTitle.textContent = `Add Spouse / Wife to ${spouse.firstName} ${spouse.lastName}`;
+  }
+  document.getElementById("addMemberModal").classList.remove("hidden");
+}
+
+/* -------------------------------------------------------
+   4. EDIT MEMBER MODAL & HANDLERS (NEW)
+------------------------------------------------------- */
+function initEditMemberModal() {
+  const modal = document.getElementById("editMemberModal");
+  const closeBtn = document.getElementById("btnCloseEditMember");
+  const form = document.getElementById("editMemberForm");
+  const fileInput = document.getElementById("editPhotoFileInput");
+  const chooseBtn = document.getElementById("btnChooseEditPhoto");
+  const removeBtn = document.getElementById("btnRemoveEditPhoto");
+  const previewImg = document.getElementById("editPhotoPreview");
+  const placeholder = document.getElementById("editPhotoPlaceholder");
+  const deceasedCheck = document.getElementById("editIsDeceased");
+  const deathDiv = document.getElementById("editDeathYearField");
+
+  if (closeBtn) closeBtn.onclick = () => modal.classList.add("hidden");
+
+  window.addEventListener("click", (e) => {
+    if (e.target === modal) modal.classList.add("hidden");
+  });
+
+  if (deceasedCheck && deathDiv) {
+    deceasedCheck.addEventListener("change", () => {
+      deathDiv.classList.toggle("hidden", !deceasedCheck.checked);
+    });
+  }
+
+  if (chooseBtn && fileInput) {
+    chooseBtn.addEventListener("click", () => fileInput.click());
+  }
+
+  if (fileInput) {
+    fileInput.addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      try {
+        const compressed = await compressImage(file, 500, 0.82);
+        currentEditPhotoBase64 = compressed;
+        if (previewImg) {
+          previewImg.src = compressed;
+          previewImg.classList.remove("hidden");
+        }
+        if (placeholder) placeholder.classList.add("hidden");
+        if (removeBtn) removeBtn.classList.remove("hidden");
+      } catch (err) {
+        alert("Could not process picture. Please try another image.");
+      }
+    });
+  }
+
+  if (removeBtn) {
+    removeBtn.addEventListener("click", () => {
+      currentEditPhotoBase64 = "";
+      if (fileInput) fileInput.value = "";
+      if (previewImg) {
+        previewImg.src = "";
+        previewImg.classList.add("hidden");
+      }
+      if (placeholder) placeholder.classList.remove("hidden");
+      removeBtn.classList.add("hidden");
+    });
+  }
+
+  if (form) {
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const pin = document.getElementById("editPin").value.trim();
+      if (pin.toUpperCase() !== (appData.familyInfo?.familyPin || "KINTU2026")) {
+        alert("Incorrect Family Passcode. Please enter KINTU2026 to authorize changes.");
+        return;
+      }
+
+      const memberId = document.getElementById("editMemberId").value;
+      const member = appData.members.find((m) => m.id === memberId);
+      if (!member) {
+        alert("Member record not found.");
+        return;
+      }
+
+      member.firstName = document.getElementById("editFirstName").value.trim();
+      member.lastName = document.getElementById("editLastName").value.trim();
+      member.empaako = document.getElementById("editEmpaako").value.trim();
+      member.gender = document.getElementById("editGender").value;
+      member.birthYear = parseInt(document.getElementById("editBirthYear").value) || member.birthYear;
+      member.location = document.getElementById("editAddress").value.trim() || member.location;
+      member.bio = document.getElementById("editBio").value.trim();
+      member.isDeceased = document.getElementById("editIsDeceased").checked;
+      member.deathYear = member.isDeceased ? parseInt(document.getElementById("editDeathYear").value) || null : null;
+
+      if (currentEditPhotoBase64) {
+        member.photo = currentEditPhotoBase64;
+      }
+
+      const submitBtn = document.getElementById("btnSubmitEditMember");
+      const origText = submitBtn.innerHTML;
+      submitBtn.innerHTML = "Saving changes...";
+      submitBtn.disabled = true;
+
+      saveFamilyData(appData);
+      await saveMemberToDB(member);
+
+      submitBtn.innerHTML = origText;
+      submitBtn.disabled = false;
+      modal.classList.add("hidden");
+
+      renderGenerationContainers(currentSearchQuery, currentFilterGen);
+      initDirectory();
+      initMemorialWall();
+      openMemberModal(member);
+
+      alert(`${member.firstName} ${member.lastName}'s information updated successfully!`);
     });
   }
 }
 
-function updateBranchDropdown(sel) {
-  if (!sel) return;
-  const branches = [...new Set(appData.members.map(m => m.branch).filter(Boolean))];
-  if (branches.length <= 1) {
-    sel.classList.add("hidden");
-    return;
+function openEditMemberModal(member) {
+  const modal = document.getElementById("editMemberModal");
+  if (!modal) return;
+
+  document.getElementById("editMemberId").value = member.id;
+  document.getElementById("editFirstName").value = member.firstName || "";
+  document.getElementById("editLastName").value = member.lastName || "";
+  document.getElementById("editEmpaako").value = member.empaako || "";
+  document.getElementById("editGender").value = member.gender || "male";
+  document.getElementById("editBirthYear").value = member.birthYear || "";
+  document.getElementById("editAddress").value = member.location || "";
+  document.getElementById("editBio").value = member.bio || "";
+  document.getElementById("editPin").value = "KINTU2026";
+
+  const decCheck = document.getElementById("editIsDeceased");
+  const deathDiv = document.getElementById("editDeathYearField");
+  const deathYearInput = document.getElementById("editDeathYear");
+
+  decCheck.checked = !!member.isDeceased;
+  deathDiv.classList.toggle("hidden", !member.isDeceased);
+  deathYearInput.value = member.deathYear || "";
+
+  currentEditPhotoBase64 = member.photo || "";
+  const previewImg = document.getElementById("editPhotoPreview");
+  const placeholder = document.getElementById("editPhotoPlaceholder");
+  const removeBtn = document.getElementById("btnRemoveEditPhoto");
+
+  if (member.photo) {
+    previewImg.src = member.photo;
+    previewImg.classList.remove("hidden");
+    placeholder.classList.add("hidden");
+    removeBtn.classList.remove("hidden");
+  } else {
+    previewImg.src = "";
+    previewImg.classList.add("hidden");
+    placeholder.classList.remove("hidden");
+    removeBtn.classList.add("hidden");
   }
-  sel.classList.remove("hidden");
-  sel.innerHTML = '<option value="all">All Lineage Branches</option>';
-  branches.forEach(b => { const o = document.createElement("option"); o.value = b; o.textContent = b; sel.appendChild(o); });
+
+  modal.classList.remove("hidden");
 }
 
-/* TIMELINE */
+/* -------------------------------------------------------
+   5. MINUTES & CLAN DOCUMENT ARCHIVE SECTION (NEW)
+------------------------------------------------------- */
+function initMinutesSection() {
+  const grid = document.getElementById("minutesGrid");
+  if (!grid) return;
+
+  const minutes = appData.minutes || [];
+  grid.innerHTML = minutes.map((doc) => `
+    <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm hover:border-amber-300 transition flex flex-col justify-between">
+      <div>
+        <div class="flex items-center justify-between gap-2 mb-2">
+          <span class="text-[10px] font-extrabold uppercase tracking-widest text-amber-800 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-md">
+            ${doc.category}
+          </span>
+          <span class="text-xs font-semibold text-slate-500">${doc.date}</span>
+        </div>
+        <h4 class="text-base font-bold font-serif-royal text-slate-900 mb-1.5">${doc.title}</h4>
+        <p class="text-xs text-slate-500 font-medium mb-3">Recorded by: <strong class="text-slate-700">${doc.recordedBy}</strong></p>
+        <p class="text-xs text-slate-600 leading-relaxed mb-4">${doc.summary}</p>
+        <div class="flex flex-wrap gap-1.5 mb-4">
+          ${doc.tags.map(t => `<span class="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md font-medium">#${t}</span>`).join("")}
+        </div>
+      </div>
+      <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+        <span class="text-emerald-700 font-bold flex items-center gap-1.5">
+          <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          ${doc.status}
+        </span>
+        <button onclick="downloadFamilyPDF()" class="text-amber-700 hover:text-amber-900 font-bold flex items-center gap-1 underline">
+          Download Record &rarr;
+        </button>
+      </div>
+    </div>
+  `).join("");
+}
+
+/* -------------------------------------------------------
+   6. PDF EXPORT OF COMPLETE FAMILY REGISTRY & MINUTES
+------------------------------------------------------- */
+function downloadFamilyPDF() {
+  const members = appData.members || [];
+  const minutes = appData.minutes || [];
+  const exportDate = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+
+  let printWindow = window.open("", "_blank");
+  if (!printWindow) {
+    alert("Please allow pop-ups in your browser to view and download the official PDF registry.");
+    return;
+  }
+
+  let generationsHTML = "";
+  for (let g = 1; g <= 8; g++) {
+    const meta = GENERATION_METADATA[g];
+    const genList = members.filter(m => (m.generation || 1) === g);
+    if (!genList.length) continue;
+
+    generationsHTML += `
+      <div style="margin-bottom: 24px; page-break-inside: avoid;">
+        <h3 style="font-family: 'Playfair Display', Georgia, serif; font-size: 16px; color: #92400e; border-bottom: 2px solid #fde68a; padding-bottom: 4px; margin-bottom: 8px;">
+          ${meta.title} (${genList.length} Relatives)
+        </h3>
+        <p style="font-size: 11px; color: #64748b; margin-top: 0; margin-bottom: 12px; font-style: italic;">
+          ${meta.era} &mdash; ${meta.desc}
+        </p>
+        <table style="width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 12px;">
+          <thead>
+            <tr style="background-color: #f8fafc; text-align: left; border-bottom: 1px solid #cbd5e1;">
+              <th style="padding: 6px 8px; border: 1px solid #e2e8f0;">#</th>
+              <th style="padding: 6px 8px; border: 1px solid #e2e8f0;">Full Name</th>
+              <th style="padding: 6px 8px; border: 1px solid #e2e8f0;">Empaako</th>
+              <th style="padding: 6px 8px; border: 1px solid #e2e8f0;">Birth/Death</th>
+              <th style="padding: 6px 8px; border: 1px solid #e2e8f0;">Location</th>
+              <th style="padding: 6px 8px; border: 1px solid #e2e8f0;">Children Recorded</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${genList.map((m, idx) => `
+              <tr style="background-color: ${idx % 2 === 0 ? '#ffffff' : '#f8fafc'};">
+                <td style="padding: 5px 8px; border: 1px solid #e2e8f0; font-weight: bold; width: 30px;">${idx + 1}</td>
+                <td style="padding: 5px 8px; border: 1px solid #e2e8f0; font-weight: 600; color: #0f172a;">${m.firstName} ${m.lastName}</td>
+                <td style="padding: 5px 8px; border: 1px solid #e2e8f0; color: #b45309; font-weight: bold;">${m.empaako ? `"${m.empaako}"` : "&mdash;"}</td>
+                <td style="padding: 5px 8px; border: 1px solid #e2e8f0; color: #475569;">${m.isDeceased ? `${m.birthYear || "?"} - ${m.deathYear || "Passed"}` : `b. ${m.birthYear || "?"}`}</td>
+                <td style="padding: 5px 8px; border: 1px solid #e2e8f0; color: #475569;">${m.location || "Bunyoro-Kitara"}</td>
+                <td style="padding: 5px 8px; border: 1px solid #e2e8f0; color: #475569;">${m.childrenIds ? m.childrenIds.length : 0}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  let minutesHTML = "";
+  minutes.forEach((doc, idx) => {
+    minutesHTML += `
+      <div style="margin-bottom: 16px; padding: 12px; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; page-break-inside: avoid;">
+        <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px;">
+          <strong style="color: #92400e; text-transform: uppercase;">${doc.category}</strong>
+          <span style="color: #64748b;">${doc.date} &bull; ${doc.status}</span>
+        </div>
+        <h4 style="font-size: 13px; font-weight: bold; color: #0f172a; margin: 4px 0;">${doc.title}</h4>
+        <p style="font-size: 11px; color: #475569; margin: 2px 0 6px 0;">Recorded by: <strong>${doc.recordedBy}</strong></p>
+        <p style="font-size: 11px; color: #334155; line-height: 1.4; margin: 0;">${doc.summary}</p>
+      </div>
+    `;
+  });
+
+  const fullDocumentHTML = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Kintu Family Heritage Registry &amp; Minutes Book</title>
+      <meta charset="UTF-8">
+      <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+      <style>
+        body {
+          font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+          color: #1e293b;
+          line-height: 1.5;
+          margin: 0;
+          padding: 24px;
+          background: #ffffff;
+        }
+        @media print {
+          body { padding: 12px; }
+          .no-print { display: none; }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="no-print" style="margin-bottom: 20px; padding: 12px; background-color: #fef3c7; border: 1px solid #fde68a; border-radius: 8px; text-align: center;">
+        <span style="font-weight: bold; font-size: 13px; color: #92400e;">Official Clan Documentation Export</span>
+        <button onclick="window.print()" style="margin-left: 14px; padding: 6px 16px; background-color: #b45309; color: #ffffff; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">
+          Print or Save as PDF
+        </button>
+      </div>
+
+      <!-- Royal Header -->
+      <div style="text-align: center; border-bottom: 3px double #b45309; padding-bottom: 16px; margin-bottom: 24px;">
+        <span style="font-size: 11px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: #b45309;">
+          Bunyoro-Kitara Kingdom &bull; Western Uganda
+        </span>
+        <h1 style="font-family: 'Playfair Display', Georgia, serif; font-size: 26px; color: #0f172a; margin: 6px 0 4px 0;">
+          The Kintu Family Heritage Registry &amp; Lineage Record
+        </h1>
+        <p style="font-size: 13px; font-style: italic; color: #475569; margin: 0 0 6px 0;">
+          "Obumu n'Engeso Nungi: Amabara g'Ekika Tegabura"
+        </p>
+        <p style="font-size: 11px; color: #64748b; margin: 0;">
+          Official Clan Registry Preserving <strong>${members.length} Documented Relatives</strong> across 8 Generations &bull; Exported on ${exportDate}
+        </p>
+      </div>
+
+      <!-- Historical Record Attribution Banner -->
+      <div style="background-color: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 12px 16px; margin-bottom: 24px;">
+        <strong style="color: #92400e; font-size: 12px; text-transform: uppercase; display: block; margin-bottom: 4px;">
+          Historical Citation: Endugiiro yoruganda rwaba - Isiitwe: Ababwijwa (1986)
+        </strong>
+        <p style="font-size: 11px; color: #334155; margin: 0; line-height: 1.45;">
+          Recorded in 1986 by clan historians <strong>Mr. Mbabazi Twesige Tadeo (Amooti)</strong> and <strong>Mr. Katotera Jonathan Biferamunda (Akiiki)</strong>. Preserving ancestral roots from patriarch Banjwa, through the elders, patriarchs, clan fathers, and modern descendants.
+        </p>
+      </div>
+
+      <!-- Lineage Roster -->
+      <h2 style="font-family: 'Playfair Display', Georgia, serif; font-size: 18px; color: #0f172a; margin-bottom: 16px;">
+        Generational Directory of All Family Members (Gen 1 &ndash; Gen 8)
+      </h2>
+      ${generationsHTML}
+
+      <!-- Meeting Minutes & Document Archive -->
+      <div style="margin-top: 32px; page-break-before: always;">
+        <h2 style="font-family: 'Playfair Display', Georgia, serif; font-size: 18px; color: #0f172a; border-bottom: 2px solid #b45309; padding-bottom: 6px; margin-bottom: 16px;">
+          Family Assembly Minutes &amp; Council Resolutions
+        </h2>
+        ${minutesHTML}
+      </div>
+
+      <!-- Footer Signoff -->
+      <div style="margin-top: 32px; border-top: 1px solid #e2e8f0; padding-top: 16px; text-align: center; font-size: 10px; color: #94a3b8;">
+        &copy; 2026 The Kintu Family Lineage &bull; Bunyoro-Kitara Kingdom &bull; Official Digital Heritage Archive
+      </div>
+    </body>
+    </html>
+  `;
+
+  printWindow.document.open();
+  printWindow.document.write(fullDocumentHTML);
+  printWindow.document.close();
+}
+
+/* -------------------------------------------------------
+   7. TIMELINE, MEMORIAL WALL, GALLERY & DIRECTORY
+------------------------------------------------------- */
 function initHistoryTimeline() {
-  const c = document.getElementById("timelineList"); if (!c) return;
-  c.innerHTML = appData.timeline.map(item => `
+  const c = document.getElementById("timelineList");
+  if (!c) return;
+  c.innerHTML = appData.timeline.map((item) => `
     <div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group mb-8">
-      <div class="flex items-center justify-center w-10 h-10 rounded-full border-2 border-amber-600 bg-slate-900 group-hover:scale-110 group-hover:bg-amber-600 group-hover:text-white transition-all duration-300 z-10 shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2">
+      <div class="flex items-center justify-center w-10 h-10 rounded-full border-2 border-amber-600 bg-white group-hover:scale-110 group-hover:bg-amber-600 group-hover:text-white transition-all duration-300 z-10 shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow-sm">
         <span class="text-xs font-bold">${item.year.slice(-2)}</span>
       </div>
-      <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-5 rounded-2xl bg-slate-900 border border-slate-700/60 shadow group-hover:border-amber-600/40 transition">
+      <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-5 rounded-2xl bg-white border border-slate-200 shadow-sm group-hover:border-amber-400 transition">
         <div class="flex items-center justify-between mb-2">
-          <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-amber-600/15 border border-amber-600/30 text-amber-500">${item.year}</span>
-          <span class="text-[11px] text-slate-400 font-medium">${item.category}</span>
+          <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-800">${item.year}</span>
+          <span class="text-[11px] text-slate-500 font-semibold">${item.category}</span>
         </div>
-        <h4 class="text-base font-semibold text-white mb-1.5">${item.title}</h4>
-        <p class="text-xs text-slate-400 leading-relaxed">${item.description}</p>
+        <h4 class="text-base font-bold text-slate-900 mb-1.5 font-serif-royal">${item.title}</h4>
+        <p class="text-xs text-slate-600 leading-relaxed">${item.description}</p>
       </div>
-    </div>`).join("");
+    </div>
+  `).join("");
 }
 
-/* MEMORIAL */
 function initMemorialWall() {
-  const c = document.getElementById("memorialGrid"); if (!c) return;
-  const deceased = appData.members.filter(m => m.isDeceased);
+  const c = document.getElementById("memorialGrid");
+  if (!c) return;
+  const deceased = appData.members.filter((m) => m.isDeceased);
+
   if (!deceased.length) {
-    c.innerHTML = `<div class="col-span-full text-center py-12 px-4 bg-slate-900 rounded-2xl border border-slate-800">
-      <div class="w-12 h-12 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-500 mx-auto mb-3">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+    c.innerHTML = `
+      <div class="col-span-full text-center py-12 px-4 bg-white rounded-3xl border border-slate-200 shadow-sm">
+        <h4 class="text-base font-bold text-slate-900 mb-1">In Memory of Departed Elders</h4>
+        <p class="text-xs text-slate-500 max-w-md mx-auto mb-4">Departed forebears will appear here when recorded with "Deceased" checked.</p>
       </div>
-      <h4 class="text-base font-bold text-white mb-1">In Memory of Departed Elders</h4>
-      <p class="text-xs text-slate-400 max-w-md mx-auto mb-4 leading-relaxed">Departed ancestors will appear here when added to the tree with "Deceased" checked.</p>
-      <button onclick="document.getElementById('btnOpenAddMember').click()" class="text-xs text-amber-500 hover:text-amber-400 underline font-semibold">Add an Ancestor &rarr;</button>
-    </div>`;
+    `;
     return;
   }
-  c.innerHTML = deceased.map(m => `
-    <div class="bg-slate-900 rounded-2xl border border-slate-700/60 p-6 flex flex-col justify-between hover:border-slate-600 transition group">
+
+  c.innerHTML = deceased.map((m) => `
+    <div class="bg-white rounded-2xl border border-slate-200 p-6 flex flex-col justify-between hover:border-amber-300 transition shadow-sm group">
       <div>
         <div class="flex items-center gap-4 mb-4">
-          ${m.photo
-            ? `<img src="${m.photo}" class="w-16 h-16 rounded-full object-cover border-2 border-slate-600 grayscale group-hover:grayscale-0 transition duration-500">`
-            : `<div class="w-16 h-16 rounded-full bg-slate-800 border-2 border-slate-700 flex items-center justify-center text-amber-500 font-bold text-lg">${m.firstName[0]}</div>`
-          }
+          ${m.photo ? `
+            <img src="${m.photo}" class="w-16 h-16 rounded-full object-cover border-2 border-slate-300 grayscale group-hover:grayscale-0 transition duration-500 shadow-sm">
+          ` : `
+            <div class="w-16 h-16 rounded-full bg-slate-100 border-2 border-slate-200 flex items-center justify-center text-slate-700 font-bold text-lg shadow-sm">
+              ${m.firstName[0]}
+            </div>
+          `}
           <div>
-            <h4 class="text-base font-bold text-white">${m.firstName} ${m.lastName}</h4>
-            <p class="text-xs text-amber-500 font-medium">${m.birthYear || ""} &ndash; ${m.deathYear || "Passed"}</p>
-            ${m.empaako ? `<p class="text-[11px] text-slate-400">Empaako: "${m.empaako}"</p>` : ""}
-            <p class="text-xs text-slate-400">${m.location || "Bunyoro-Kitara"}</p>
+            <h4 class="text-base font-bold text-slate-900 font-serif-royal">${m.firstName} ${m.lastName}</h4>
+            <p class="text-xs text-amber-800 font-bold">${m.birthYear || ""} &ndash; ${m.deathYear || "Passed"}</p>
+            ${m.empaako ? `<p class="text-[11px] text-slate-600 font-semibold">Empaako: "${m.empaako}"</p>` : ""}
+            <p class="text-xs text-slate-500">${m.location || "Bunyoro-Kitara"}</p>
           </div>
         </div>
       </div>
-      <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-500">
-        <span>In Perpetual Memory</span><span class="text-amber-500 font-medium">Kintu Family</span>
+      <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+        <span>In Perpetual Memory</span>
+        <span class="text-amber-800 font-bold">Kintu Lineage</span>
       </div>
-    </div>`).join("");
+    </div>
+  `).join("");
 }
-
-/* GALLERY */
-let currentUploadedArchivePhotoBase64 = "";
 
 function initGallery() {
   renderGalleryItems("all");
-  document.querySelectorAll(".gallery-filter-btn").forEach(btn => {
+
+  document.querySelectorAll(".gallery-filter-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
-      document.querySelectorAll(".gallery-filter-btn").forEach(b => { b.classList.remove("bg-slate-600","text-white"); b.classList.add("bg-slate-800","text-slate-300"); });
-      btn.classList.add("bg-slate-600","text-white"); btn.classList.remove("bg-slate-800","text-slate-300");
+      document.querySelectorAll(".gallery-filter-btn").forEach((b) => {
+        b.classList.remove("bg-amber-700", "text-white", "font-bold");
+        b.classList.add("bg-slate-100", "text-slate-700", "font-semibold");
+      });
+      btn.classList.add("bg-amber-700", "text-white", "font-bold");
+      btn.classList.remove("bg-slate-100", "text-slate-700", "font-semibold");
       renderGalleryItems(btn.dataset.cat);
     });
   });
 
   // Archive photo upload
-  const archiveFileInput = document.getElementById("archivePhotoFileInput");
-  const btnChooseArchivePhoto = document.getElementById("btnChooseArchivePhoto");
-  const btnRemoveArchivePhoto = document.getElementById("btnRemoveArchivePhoto");
-  const archivePreviewImg = document.getElementById("archivePhotoPreview");
-  const archivePlaceholder = document.getElementById("archivePhotoPlaceholder");
+  const fileInput = document.getElementById("archivePhotoFileInput");
+  const chooseBtn = document.getElementById("btnChooseArchivePhoto");
+  const removeBtn = document.getElementById("btnRemoveArchivePhoto");
+  const previewImg = document.getElementById("archivePhotoPreview");
+  const placeholder = document.getElementById("archivePhotoPlaceholder");
+  let archiveBase64 = "";
 
-  const resetArchiveUpload = () => {
-    currentUploadedArchivePhotoBase64 = "";
-    if (archiveFileInput) archiveFileInput.value = "";
-    if (archivePreviewImg) { archivePreviewImg.src = ""; archivePreviewImg.classList.add("hidden"); }
-    if (archivePlaceholder) archivePlaceholder.classList.remove("hidden");
-    if (btnRemoveArchivePhoto) btnRemoveArchivePhoto.classList.add("hidden");
-  };
-
-  if (btnChooseArchivePhoto && archiveFileInput) {
-    btnChooseArchivePhoto.addEventListener("click", () => archiveFileInput.click());
+  if (chooseBtn && fileInput) {
+    chooseBtn.addEventListener("click", () => fileInput.click());
   }
 
-  if (archiveFileInput) {
-    archiveFileInput.addEventListener("change", async (e) => {
+  if (fileInput) {
+    fileInput.addEventListener("change", async (e) => {
       const file = e.target.files[0];
       if (!file) return;
-      if (!file.type.startsWith("image/")) {
-        alert("Please select a valid image file (PNG, JPG, JPEG, WebP).");
-        return;
-      }
       try {
-        const compressedBase64 = await compressImage(file, 900, 0.85);
-        currentUploadedArchivePhotoBase64 = compressedBase64;
-        if (archivePreviewImg) {
-          archivePreviewImg.src = compressedBase64;
-          archivePreviewImg.classList.remove("hidden");
+        const compressed = await compressImage(file, 900, 0.85);
+        archiveBase64 = compressed;
+        if (previewImg) {
+          previewImg.src = compressed;
+          previewImg.classList.remove("hidden");
         }
-        if (archivePlaceholder) archivePlaceholder.classList.add("hidden");
-        if (btnRemoveArchivePhoto) btnRemoveArchivePhoto.classList.remove("hidden");
+        if (placeholder) placeholder.classList.add("hidden");
+        if (removeBtn) removeBtn.classList.remove("hidden");
       } catch (err) {
-        console.error("Archive image processing error", err);
-        alert("Could not process the selected image.");
+        alert("Could not process picture.");
       }
     });
   }
 
-  if (btnRemoveArchivePhoto) {
-    btnRemoveArchivePhoto.addEventListener("click", resetArchiveUpload);
+  if (removeBtn) {
+    removeBtn.addEventListener("click", () => {
+      archiveBase64 = "";
+      if (fileInput) fileInput.value = "";
+      if (previewImg) {
+        previewImg.src = "";
+        previewImg.classList.add("hidden");
+      }
+      if (placeholder) placeholder.classList.remove("hidden");
+      removeBtn.classList.add("hidden");
+    });
   }
 
-  const pf = document.getElementById("addPhotoForm");
-  if (pf) {
-    pf.addEventListener("submit", async (e) => {
+  const form = document.getElementById("addPhotoForm");
+  if (form) {
+    form.addEventListener("submit", async (e) => {
       e.preventDefault();
       const title = document.getElementById("photoTitle").value.trim();
       const urlInput = document.getElementById("photoUrl")?.value.trim() || "";
-      const image = currentUploadedArchivePhotoBase64 || urlInput;
+      const image = archiveBase64 || urlInput;
       if (!title || !image) {
         alert("Please select a photo or enter an image URL.");
         return;
@@ -277,52 +1021,59 @@ function initGallery() {
         caption: document.getElementById("photoCaption").value.trim()
       };
 
-      const btn = document.getElementById("btnSubmitArchivePhoto") || pf.querySelector("button[type=submit]");
-      const origText = btn.innerHTML;
-      btn.innerHTML = "Saving photo...";
+      const btn = document.getElementById("btnSubmitArchivePhoto");
+      btn.innerHTML = "Saving...";
       btn.disabled = true;
 
       appData.gallery.push(newPhoto);
       saveFamilyData(appData);
       await savePhotoToDB(newPhoto);
 
-      btn.innerHTML = origText;
+      btn.innerHTML = "Save Photo to Archive";
       btn.disabled = false;
 
       renderGalleryItems("all");
       document.getElementById("addPhotoModal").classList.add("hidden");
-      pf.reset();
-      resetArchiveUpload();
-      alert("Photo added to the family archive!");
+      form.reset();
+      archiveBase64 = "";
+      if (previewImg) previewImg.classList.add("hidden");
+      if (placeholder) placeholder.classList.remove("hidden");
+      alert("Photo contributed to the family archive!");
     });
   }
 }
 
 function renderGalleryItems(category) {
-  const grid = document.getElementById("galleryGrid"); if (!grid) return;
-  if (!appData.gallery.length) {
-    grid.innerHTML = `<div class="col-span-full text-center py-16 px-4 bg-slate-900 rounded-2xl border border-slate-800">
-      <div class="w-14 h-14 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-500 mx-auto mb-3">
-        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+  const grid = document.getElementById("galleryGrid");
+  if (!grid) return;
+
+  if (!appData.gallery || !appData.gallery.length) {
+    grid.innerHTML = `
+      <div class="col-span-full text-center py-12 px-4 bg-white rounded-3xl border border-slate-200 shadow-sm">
+        <h4 class="text-base font-bold text-slate-900 mb-1">Gallery Ready for Memories</h4>
+        <p class="text-xs text-slate-500 max-w-md mx-auto mb-4">No photos uploaded yet. Be the first to contribute a family moment.</p>
+        <button onclick="document.getElementById('addPhotoModal').classList.remove('hidden')" class="px-4 py-2 rounded-xl bg-amber-700 text-white text-xs font-bold shadow-sm transition">
+          Upload First Photo
+        </button>
       </div>
-      <h4 class="text-base font-bold text-white mb-1">Gallery Ready for Photos</h4>
-      <p class="text-xs text-slate-400 max-w-md mx-auto mb-6 leading-relaxed">No photos yet. Upload ancestral portraits, celebrations, and family moments.</p>
-      <button onclick="document.getElementById('addPhotoModal').classList.remove('hidden')" class="px-5 py-2.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs transition">Upload First Photo</button>
-    </div>`; return;
+    `;
+    return;
   }
-  const items = category === "all" ? appData.gallery : appData.gallery.filter(g => g.category.toLowerCase() === category.toLowerCase());
-  grid.innerHTML = items.map(img => `
-    <div class="group relative rounded-2xl overflow-hidden bg-slate-900 border border-slate-700/60 aspect-[4/3] cursor-pointer hover:border-slate-500 transition duration-300" onclick="openLightbox('${img.image}','${img.title}','${img.caption}','${img.year}')">
+
+  const items = category === "all" ? appData.gallery : appData.gallery.filter((g) => g.category.toLowerCase() === category.toLowerCase());
+  grid.innerHTML = items.map((img) => `
+    <div class="group relative rounded-2xl overflow-hidden bg-white border border-slate-200 shadow-sm aspect-[4/3] cursor-pointer hover:border-amber-400 transition" onclick="openLightbox('${img.image}','${img.title}','${img.caption}','${img.year}')">
       <img src="${img.image}" alt="${img.title}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
-      <div class="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent p-4 flex flex-col justify-end">
+      <div class="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/20 to-transparent p-4 flex flex-col justify-end">
         <div class="flex items-center justify-between mb-1">
-          <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-800/80 text-slate-300 border border-slate-700">${img.category}</span>
-          <span class="text-[11px] text-amber-500 font-semibold">${img.year}</span>
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/90 text-slate-800 shadow-sm">${img.category}</span>
+          <span class="text-[11px] text-amber-300 font-bold">${img.year}</span>
         </div>
         <h5 class="text-sm font-bold text-white truncate">${img.title}</h5>
-        <p class="text-xs text-slate-300 line-clamp-1">${img.caption || ""}</p>
+        <p class="text-xs text-slate-200 line-clamp-1">${img.caption || ""}</p>
       </div>
-    </div>`).join("");
+    </div>
+  `).join("");
 }
 
 function openLightbox(src, title, caption, year) {
@@ -333,7 +1084,6 @@ function openLightbox(src, title, caption, year) {
   document.getElementById("lightboxModal").classList.remove("hidden");
 }
 
-/* DIRECTORY */
 function initDirectory() {
   const grid = document.getElementById("directoryGrid");
   const si = document.getElementById("directorySearch");
@@ -344,70 +1094,75 @@ function initDirectory() {
     document.getElementById("directoryTotalCount").textContent = `${list.length} Relatives Recorded`;
     if (!list.length) {
       grid.innerHTML = `
-        <div class="col-span-full p-8 rounded-2xl bg-slate-900 border border-slate-800 text-center">
-          <p class="text-xs text-slate-400 mb-3">No relatives found matching your filter.</p>
-          <button onclick="document.getElementById('btnOpenAddMember').click()" class="text-xs text-amber-500 font-semibold underline">Add a Member &rarr;</button>
-        </div>`;
+        <div class="col-span-full p-8 rounded-2xl bg-white border border-slate-200 text-center shadow-sm">
+          <p class="text-xs text-slate-500 mb-3">No relatives found matching your filter.</p>
+          <button onclick="document.getElementById('btnOpenAddMember').click()" class="text-xs text-amber-700 font-bold underline">Add a Member &rarr;</button>
+        </div>
+      `;
       return;
     }
-    grid.innerHTML = list.map(m => `
-      <div class="p-4 rounded-2xl bg-slate-900 border border-slate-700/60 hover:border-slate-600 transition flex flex-col justify-between group">
+    grid.innerHTML = list.map((m) => `
+      <div class="bg-white rounded-2xl border border-slate-200 p-4 hover:border-amber-300 hover:shadow-md transition cursor-pointer flex flex-col justify-between" onclick="openMemberModalById('${m.id}')">
         <div>
-          <div class="flex items-start gap-3 mb-3">
-            ${m.photo
-              ? `<img src="${m.photo}" class="w-14 h-14 rounded-xl object-cover border border-slate-700 shadow-sm shrink-0">`
-              : `<div class="w-14 h-14 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-amber-500 font-bold text-lg shrink-0">${m.firstName[0]}</div>`
-            }
+          <div class="flex items-start gap-3 mb-2.5">
+            ${m.photo ? `
+              <img src="${m.photo}" class="w-11 h-11 rounded-xl object-cover border border-slate-200 shadow-sm shrink-0">
+            ` : `
+              <div class="w-11 h-11 rounded-xl bg-amber-100 border border-amber-200 flex items-center justify-center text-amber-800 font-bold text-base shadow-sm shrink-0">
+                ${m.firstName[0]}
+              </div>
+            `}
             <div class="min-w-0 flex-1">
-              <h4 class="text-sm font-bold text-white truncate">${m.firstName} ${m.lastName}</h4>
-              ${m.empaako ? `<p class="text-xs text-amber-400 font-medium">"${m.empaako}"</p>` : ""}
-              <p class="text-xs text-slate-400 truncate mt-1 flex items-center gap-1">
-                <svg class="w-3 h-3 text-slate-500 inline shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/></svg>
-                <span>${m.location || "Location Not Specified"}</span>
-              </p>
+              <h5 class="text-sm font-bold text-slate-900 truncate font-serif-royal">${m.firstName} ${m.lastName}</h5>
+              ${m.empaako ? `<span class="text-[10px] font-bold text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 inline-block mt-0.5">"${m.empaako}"</span>` : ""}
+              <p class="text-[11px] text-slate-500 mt-1">Generation ${m.generation || 1}</p>
             </div>
           </div>
+          <p class="text-[11px] text-slate-600 truncate flex items-center gap-1">
+            <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            <span>${m.location || "Bunyoro-Kitara"}</span>
+          </p>
         </div>
-        <div class="pt-3 border-t border-slate-800 flex items-center justify-between">
-          <span class="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700 font-semibold">Gen ${m.generation}</span>
-          <button class="text-xs text-amber-500 hover:text-amber-400 font-semibold" onclick="viewMemberDetail('${m.id}')">View Profile &rarr;</button>
+        <div class="pt-2 mt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
+          <span class="text-slate-500">${m.childrenIds ? m.childrenIds.length : 0} children</span>
+          <span class="text-amber-700 font-bold">Details &rarr;</span>
         </div>
-      </div>`).join("");
+      </div>
+    `).join("");
   }
 
-  function filter() {
-    const q = (si?.value || "").toLowerCase().trim();
-    const gen = (rf?.value || "all");
-    render(appData.members.filter(m => {
-      const matchText = `${m.firstName} ${m.lastName} ${m.empaako||""} ${m.location||""}`.toLowerCase();
-      const textOk = !q || matchText.includes(q);
-      const genOk = gen === "all" || String(m.generation) === String(gen);
-      return textOk && genOk;
-    }));
+  function filterAndRender() {
+    const q = si ? si.value.trim().toLowerCase() : "";
+    const role = rf ? rf.value : "all";
+    let list = appData.members || [];
+    if (role !== "all") list = list.filter((m) => String(m.generation) === String(role));
+    if (q) {
+      list = list.filter((m) =>
+        (m.firstName && m.firstName.toLowerCase().includes(q)) ||
+        (m.lastName && m.lastName.toLowerCase().includes(q)) ||
+        (m.empaako && m.empaako.toLowerCase().includes(q)) ||
+        (m.location && m.location.toLowerCase().includes(q))
+      );
+    }
+    render(list);
   }
 
-  if (si) si.addEventListener("input", filter);
-  if (rf) rf.addEventListener("change", filter);
-  render(appData.members);
+  if (si) si.addEventListener("input", filterAndRender);
+  if (rf) rf.addEventListener("change", filterAndRender);
+  filterAndRender();
 }
 
-function viewMemberDetail(id) {
-  const m = appData.members.find(m => m.id === id);
-  if (m) {
-    openMemberModal(m);
-    document.getElementById("treeSection")?.scrollIntoView({ behavior: "smooth" });
-    treeEngine.focusOnMember(id);
-  }
-}
-
-/* REUNION RSVP */
+/* -------------------------------------------------------
+   8. REUNION RSVP & DATABASE SYNC
+------------------------------------------------------- */
 function initReunion() {
-  fetchRsvpTotal().then(total => {
+  fetchRsvpTotal().then((total) => {
     if (total > 0) {
       const el = document.getElementById("rsvpConfirmedNumber");
       if (el) el.textContent = total;
     }
   });
+
   const f = document.getElementById("reunionRsvpForm");
   if (f) {
     f.addEventListener("submit", async (e) => {
@@ -426,7 +1181,266 @@ function initReunion() {
   }
 }
 
-/* IMAGE COMPRESSION UTILITY */
+async function syncFromDB() {
+  const [dbMembers, dbGallery] = await Promise.all([fetchMembersFromDB(), fetchGalleryFromDB()]);
+  let changed = false;
+
+  if (dbMembers !== null) {
+    const memberMap = new Map();
+    // 1. Seed complete 148 historical members
+    (KINTU_INITIAL_DATA.members || []).forEach((m) => memberMap.set(m.id, { ...m }));
+    // 2. Overlay live Neon DB records
+    dbMembers.forEach((m) => memberMap.set(m.id, { ...m }));
+
+    const merged = Array.from(memberMap.values());
+    if (merged.length !== appData.members.length || dbMembers.length < KINTU_INITIAL_DATA.members.length) {
+      appData.members = merged;
+      changed = true;
+      if (dbMembers.length < KINTU_INITIAL_DATA.members.length) {
+        saveMembersBatchToDB(KINTU_INITIAL_DATA.members).catch(console.warn);
+      }
+    }
+  }
+
+  if (dbGallery !== null && dbGallery.length > 0) {
+    appData.gallery = dbGallery;
+    changed = true;
+  }
+
+  if (changed) {
+    saveFamilyData(appData);
+    renderGenerationContainers(currentSearchQuery, currentFilterGen);
+    initDirectory();
+    initMemorialWall();
+    renderGalleryItems("all");
+    updateHeroCount();
+  }
+
+  const rsvpTotal = await fetchRsvpTotal();
+  const rsvpEl = document.getElementById("rsvpConfirmedNumber");
+  if (rsvpEl && rsvpTotal > 0) rsvpEl.textContent = rsvpTotal;
+}
+
+function updateHeroCount() {
+  const el = document.getElementById("heroMemberCount");
+  if (el) el.textContent = appData.members.length;
+}
+
+/* -------------------------------------------------------
+   9. ADD MEMBER FORM LOGIC
+------------------------------------------------------- */
+function initModalsAndForms() {
+  const openAddBtn = document.getElementById("btnOpenAddMember");
+  const openAddHeroBtn = document.getElementById("btnHeroAddMember");
+  const openAddMobileBtn = document.getElementById("btnMobileAddMember");
+  const addModal = document.getElementById("addMemberModal");
+  const closeAddBtn = document.getElementById("btnCloseAddMember");
+
+  const openAdd = () => {
+    populateParentDropdowns();
+    const title = document.getElementById("addMemberModalTitle");
+    if (title) title.textContent = "Add Member to Family Records";
+    addModal.classList.remove("hidden");
+  };
+
+  if (openAddBtn) openAddBtn.addEventListener("click", openAdd);
+  if (openAddHeroBtn) openAddHeroBtn.addEventListener("click", openAdd);
+  if (openAddMobileBtn) openAddMobileBtn.addEventListener("click", openAdd);
+  if (closeAddBtn) closeAddBtn.addEventListener("click", () => addModal.classList.add("hidden"));
+
+  window.addEventListener("click", (e) => {
+    if (e.target === addModal) addModal.classList.add("hidden");
+    const mm = document.getElementById("memberProfileModal");
+    if (e.target === mm) mm.classList.add("hidden");
+    const lb = document.getElementById("lightboxModal");
+    if (e.target === lb) lb.classList.add("hidden");
+    const pm = document.getElementById("addPhotoModal");
+    if (e.target === pm) pm.classList.add("hidden");
+  });
+
+  const decCheck = document.getElementById("regIsDeceased");
+  const deathDiv = document.getElementById("deathYearField");
+  if (decCheck && deathDiv) {
+    decCheck.addEventListener("change", () => deathDiv.classList.toggle("hidden", !decCheck.checked));
+  }
+
+  // File Upload
+  const fileInput = document.getElementById("regPhotoFileInput");
+  const btnChoosePhoto = document.getElementById("btnChoosePhoto");
+  const btnRemovePhoto = document.getElementById("btnRemovePhoto");
+  const previewImg = document.getElementById("regPhotoPreview");
+  const previewPlaceholder = document.getElementById("regPhotoPlaceholder");
+
+  const resetPhotoUpload = () => {
+    currentUploadedPhotoBase64 = "";
+    if (fileInput) fileInput.value = "";
+    if (previewImg) {
+      previewImg.src = "";
+      previewImg.classList.add("hidden");
+    }
+    if (previewPlaceholder) previewPlaceholder.classList.remove("hidden");
+    if (btnRemovePhoto) btnRemovePhoto.classList.add("hidden");
+  };
+
+  if (btnChoosePhoto && fileInput) {
+    btnChoosePhoto.addEventListener("click", () => fileInput.click());
+  }
+
+  if (fileInput) {
+    fileInput.addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      try {
+        const compressedBase64 = await compressImage(file, 500, 0.82);
+        currentUploadedPhotoBase64 = compressedBase64;
+        if (previewImg) {
+          previewImg.src = compressedBase64;
+          previewImg.classList.remove("hidden");
+        }
+        if (previewPlaceholder) previewPlaceholder.classList.add("hidden");
+        if (btnRemovePhoto) btnRemovePhoto.classList.remove("hidden");
+      } catch (err) {
+        alert("Could not process picture. Please try another image.");
+      }
+    });
+  }
+
+  if (btnRemovePhoto) {
+    btnRemovePhoto.addEventListener("click", resetPhotoUpload);
+  }
+
+  const form = document.getElementById("addMemberForm");
+  if (form) {
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const pin = document.getElementById("regPin").value.trim();
+      if (pin.toUpperCase() !== (appData.familyInfo?.familyPin || "KINTU2026")) {
+        alert("Incorrect Family Passcode. Please enter KINTU2026.");
+        return;
+      }
+
+      const firstName = document.getElementById("regFirstName").value.trim();
+      const lastName = document.getElementById("regLastName").value.trim();
+      if (!firstName || !lastName) {
+        alert("Please enter first and last name.");
+        return;
+      }
+
+      const empaako = document.getElementById("regEmpaako").value.trim();
+      const gender = document.getElementById("regGender").value;
+      const birthYear = parseInt(document.getElementById("regBirthYear").value) || 2000;
+      const isDeceased = document.getElementById("regIsDeceased").checked;
+      const deathYear = isDeceased ? parseInt(document.getElementById("regDeathYear").value) || null : null;
+      const parentId = document.getElementById("regParent").value;
+      const spouseId = document.getElementById("regSpouse").value;
+      const address = document.getElementById("regAddress")?.value.trim() || "Bunyoro-Kitara, Uganda";
+      const photo = currentUploadedPhotoBase64 || "";
+
+      let generation = 1;
+      if (parentId) {
+        const p = appData.members.find((m) => m.id === parentId);
+        if (p) generation = Math.min((p.generation || 1) + 1, 8);
+      } else if (spouseId) {
+        const s = appData.members.find((m) => m.id === spouseId);
+        if (s) generation = s.generation || 1;
+      }
+
+      const newId = `member-${Date.now()}`;
+      const newMember = {
+        id: newId,
+        firstName,
+        lastName,
+        empaako,
+        traditionalName: empaako,
+        gender,
+        generation,
+        birthYear,
+        deathYear,
+        isDeceased,
+        branch: "Ababwijwa Lineage",
+        location: address,
+        country: "Uganda",
+        occupation: "",
+        bio: "",
+        photo,
+        parentIds: parentId ? [parentId] : [],
+        spouseIds: spouseId ? [spouseId] : [],
+        childrenIds: []
+      };
+
+      if (parentId) {
+        const p = appData.members.find((m) => m.id === parentId);
+        if (p) {
+          if (!p.childrenIds) p.childrenIds = [];
+          p.childrenIds.push(newId);
+        }
+      }
+      if (spouseId) {
+        const s = appData.members.find((m) => m.id === spouseId);
+        if (s) {
+          if (!s.spouseIds) s.spouseIds = [];
+          if (!s.spouseIds.includes(newId)) s.spouseIds.push(newId);
+        }
+      }
+
+      appData.members.push(newMember);
+      saveFamilyData(appData);
+
+      const submitBtn = document.getElementById("btnSubmitAddMember");
+      const origText = submitBtn.innerHTML;
+      submitBtn.innerHTML = "Saving to database...";
+      submitBtn.disabled = true;
+
+      await saveMemberToDB(newMember);
+
+      submitBtn.innerHTML = origText;
+      submitBtn.disabled = false;
+
+      addModal.classList.add("hidden");
+      form.reset();
+      resetPhotoUpload();
+      deathDiv?.classList.add("hidden");
+
+      renderGenerationContainers(currentSearchQuery, currentFilterGen);
+      initDirectory();
+      initMemorialWall();
+      updateHeroCount();
+      fireCelebrationConfetti();
+
+      setTimeout(() => alert(`${firstName} ${lastName} added to the Kintu family registry!`), 250);
+    });
+  }
+}
+
+function populateParentDropdowns() {
+  const ps = document.getElementById("regParent");
+  const ss = document.getElementById("regSpouse");
+  const pn = document.getElementById("regParentNotice");
+  if (!ps) return;
+
+  ps.innerHTML = '<option value="">-- None (Root Member / G1) --</option>';
+  if (ss) ss.innerHTML = '<option value="">-- None / Unmarried --</option>';
+
+  appData.members.forEach((m) => {
+    const label = `${m.firstName} ${m.lastName} (Gen ${m.generation}${m.empaako ? ` - "${m.empaako}"` : ""})`;
+    const o = document.createElement("option");
+    o.value = m.id;
+    o.textContent = label;
+    ps.appendChild(o);
+    if (ss) {
+      const os = document.createElement("option");
+      os.value = m.id;
+      os.textContent = label;
+      ss.appendChild(os);
+    }
+  });
+
+  if (pn) pn.textContent = "Select parent in tree. Generation is set automatically.";
+}
+
+/* -------------------------------------------------------
+   10. UTILITIES, IMAGE COMPRESSION & CONFETTI
+------------------------------------------------------- */
 function compressImage(file, maxDimension = 500, quality = 0.82) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -461,318 +1475,6 @@ function compressImage(file, maxDimension = 500, quality = 0.82) {
   });
 }
 
-/* ADD MEMBER FORM (Redesigned, real file upload, simplified address) */
-let currentUploadedPhotoBase64 = "";
-
-function initModalsAndForms() {
-  const openAddBtn = document.getElementById("btnOpenAddMember");
-  const openAddHeroBtn = document.getElementById("btnHeroAddMember");
-  const openAddMobileBtn = document.getElementById("btnMobileAddMember");
-  const addModal = document.getElementById("addMemberModal");
-  const closeAddBtn = document.getElementById("btnCloseAddMember");
-  const openAdd = () => {
-    populateParentDropdowns();
-    addModal.classList.remove("hidden");
-  };
-
-  if (openAddBtn) openAddBtn.addEventListener("click", openAdd);
-  if (openAddHeroBtn) openAddHeroBtn.addEventListener("click", openAdd);
-  if (openAddMobileBtn) openAddMobileBtn.addEventListener("click", openAdd);
-  if (closeAddBtn) closeAddBtn.addEventListener("click", () => addModal.classList.add("hidden"));
-
-  window.addEventListener("click", (e) => {
-    if (e.target === addModal) addModal.classList.add("hidden");
-    const mm = document.getElementById("memberProfileModal");
-    if (e.target === mm) mm.classList.add("hidden");
-    const lb = document.getElementById("lightboxModal");
-    if (e.target === lb) lb.classList.add("hidden");
-    const pm = document.getElementById("addPhotoModal");
-    if (e.target === pm) pm.classList.add("hidden");
-  });
-
-  const decCheck = document.getElementById("regIsDeceased");
-  const deathDiv = document.getElementById("deathYearField");
-  if (decCheck && deathDiv) {
-    decCheck.addEventListener("change", () => deathDiv.classList.toggle("hidden", !decCheck.checked));
-  }
-
-  // Real Photo Upload handling
-  const fileInput = document.getElementById("regPhotoFileInput");
-  const btnChoosePhoto = document.getElementById("btnChoosePhoto");
-  const btnRemovePhoto = document.getElementById("btnRemovePhoto");
-  const previewImg = document.getElementById("regPhotoPreview");
-  const previewPlaceholder = document.getElementById("regPhotoPlaceholder");
-
-  const resetPhotoUpload = () => {
-    currentUploadedPhotoBase64 = "";
-    if (fileInput) fileInput.value = "";
-    if (previewImg) { previewImg.src = ""; previewImg.classList.add("hidden"); }
-    if (previewPlaceholder) previewPlaceholder.classList.remove("hidden");
-    if (btnRemovePhoto) btnRemovePhoto.classList.add("hidden");
-  };
-
-  if (btnChoosePhoto && fileInput) {
-    btnChoosePhoto.addEventListener("click", () => fileInput.click());
-  }
-
-  if (fileInput) {
-    fileInput.addEventListener("change", async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      if (!file.type.startsWith("image/")) {
-        alert("Please select a valid image file (PNG, JPG, JPEG, WebP).");
-        return;
-      }
-      try {
-        const compressedBase64 = await compressImage(file, 500, 0.82);
-        currentUploadedPhotoBase64 = compressedBase64;
-        if (previewImg) {
-          previewImg.src = compressedBase64;
-          previewImg.classList.remove("hidden");
-        }
-        if (previewPlaceholder) previewPlaceholder.classList.add("hidden");
-        if (btnRemovePhoto) btnRemovePhoto.classList.remove("hidden");
-      } catch (err) {
-        console.error("Image processing error", err);
-        alert("Could not process the selected image. Please try another photo.");
-      }
-    });
-  }
-
-  if (btnRemovePhoto) {
-    btnRemovePhoto.addEventListener("click", resetPhotoUpload);
-  }
-
-  const form = document.getElementById("addMemberForm");
-  if (form) {
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const pin = document.getElementById("regPin").value.trim();
-      if (pin.toUpperCase() !== (appData.familyInfo?.familyPin || "KINTU2026")) {
-        alert("Incorrect Family Passcode.");
-        return;
-      }
-
-      const firstName = document.getElementById("regFirstName").value.trim();
-      const lastName = document.getElementById("regLastName").value.trim();
-      if (!firstName || !lastName) {
-        alert("Please enter first and last name.");
-        return;
-      }
-
-      const empaako = document.getElementById("regEmpaako").value.trim();
-      const gender = document.getElementById("regGender").value;
-      const birthYear = parseInt(document.getElementById("regBirthYear").value) || 2000;
-      const isDeceased = document.getElementById("regIsDeceased").checked;
-      const deathYear = isDeceased ? parseInt(document.getElementById("regDeathYear").value) || null : null;
-      const parentId = document.getElementById("regParent").value;
-      const spouseId = document.getElementById("regSpouse").value;
-      const address = document.getElementById("regAddress")?.value.trim() || "Bunyoro-Kitara, Uganda";
-      const photo = currentUploadedPhotoBase64 || "";
-
-      let generation = 1;
-      if (parentId) {
-        const p = appData.members.find(m => m.id === parentId);
-        if (p) generation = Math.min((p.generation || 1) + 1, 8);
-      } else if (spouseId) {
-        const s = appData.members.find(m => m.id === spouseId);
-        if (s) generation = s.generation || 1;
-      }
-
-      const newId = `member-${Date.now()}`;
-      const newMember = {
-        id: newId,
-        firstName,
-        lastName,
-        empaako,
-        traditionalName: empaako,
-        gender,
-        generation,
-        birthYear,
-        deathYear,
-        isDeceased,
-        branch: "Main Lineage",
-        location: address,
-        country: "Uganda",
-        occupation: "",
-        bio: "",
-        photo,
-        parentIds: parentId ? [parentId] : [],
-        spouseIds: spouseId ? [spouseId] : [],
-        childrenIds: []
-      };
-
-      if (parentId) {
-        const p = appData.members.find(m => m.id === parentId);
-        if (p) {
-          if (!p.childrenIds) p.childrenIds = [];
-          p.childrenIds.push(newId);
-        }
-      }
-      if (spouseId) {
-        const s = appData.members.find(m => m.id === spouseId);
-        if (s) {
-          if (!s.spouseIds) s.spouseIds = [];
-          if (!s.spouseIds.includes(newId)) s.spouseIds.push(newId);
-        }
-      }
-
-      appData.members.push(newMember);
-      saveFamilyData(appData);
-
-      const btn = document.getElementById("btnSubmitAddMember") || form.querySelector("button[type=submit]");
-      const origText = btn.innerHTML;
-      btn.innerHTML = `<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg> Saving to database...`;
-      btn.disabled = true;
-
-      await saveMemberToDB(newMember);
-
-      btn.innerHTML = origText;
-      btn.disabled = false;
-
-      addModal.classList.add("hidden");
-      form.reset();
-      resetPhotoUpload();
-      deathDiv?.classList.add("hidden");
-
-      treeEngine.setData(appData);
-      initDirectory();
-      initMemorialWall();
-      updateHeroCount();
-      updateBranchDropdown(document.getElementById("branchSelectFilter"));
-      fireCelebrationConfetti();
-      treeEngine.focusOnMember(newId);
-
-      setTimeout(() => alert(`${firstName} ${lastName} has been added to the Kintu Family Tree!`), 300);
-    });
-  }
-}
-
-function updateHeroCount() {
-  const el = document.getElementById("heroMemberCount");
-  if (el) el.textContent = appData.members.length;
-}
-
-function populateParentDropdowns() {
-  const ps = document.getElementById("regParent");
-  const ss = document.getElementById("regSpouse");
-  const pn = document.getElementById("regParentNotice");
-  if (!ps) return;
-  if (!appData.members.length) {
-    ps.innerHTML = '<option value="">First Root Member (Generation 1)</option>';
-    ps.disabled = true;
-    if (ss) {
-      ss.innerHTML = '<option value="">None (First Member)</option>';
-      ss.disabled = true;
-    }
-    if (pn) pn.textContent = "You are planting the first root of the family tree! This person will be Generation 1.";
-  } else {
-    ps.disabled = false;
-    ps.innerHTML = '<option value="">-- None (Root Member / G1) --</option>';
-    if (ss) {
-      ss.disabled = false;
-      ss.innerHTML = '<option value="">-- None / Unmarried --</option>';
-    }
-    appData.members.forEach(m => {
-      const label = `${m.firstName} ${m.lastName} (Gen ${m.generation}${m.empaako ? ` - "${m.empaako}"` : ""})`;
-      const o = document.createElement("option");
-      o.value = m.id;
-      o.textContent = label;
-      ps.appendChild(o);
-      if (ss) {
-        const os = document.createElement("option");
-        os.value = m.id;
-        os.textContent = label;
-        ss.appendChild(os);
-      }
-    });
-    if (pn) pn.textContent = "Select this member's parent in the tree. Generation is set automatically.";
-  }
-}
-
-/* MEMBER PROFILE MODAL */
-function openMemberModal(member) {
-  selectedMember = member;
-  const modal = document.getElementById("memberProfileModal");
-  if (!modal) return;
-  const pe = document.getElementById("modalMemberPhoto");
-  const fe = document.getElementById("modalMemberPhotoFallback");
-  if (member.photo) {
-    pe.src = member.photo;
-    pe.classList.remove("hidden");
-    fe?.classList.add("hidden");
-  } else {
-    pe.classList.add("hidden");
-    if (fe) {
-      fe.classList.remove("hidden");
-      fe.textContent = member.firstName[0];
-    }
-  }
-
-  document.getElementById("modalMemberName").textContent = `${member.firstName} ${member.lastName}`;
-  const ee = document.getElementById("modalMemberTradName");
-  if (member.empaako) {
-    ee.textContent = `Empaako: "${member.empaako}"`;
-    ee.classList.remove("hidden");
-  } else {
-    ee.classList.add("hidden");
-  }
-
-  const locEl = document.getElementById("modalMemberLocationText");
-  if (locEl) locEl.textContent = member.location || "Location Not Specified";
-
-  document.getElementById("modalMemberGenBadge").textContent = `Generation ${member.generation}`;
-  const bb = document.getElementById("modalMemberBranchBadge");
-  if (bb) bb.textContent = member.branch || "Ababwijwa Lineage";
-
-  document.getElementById("modalMemberDates").innerHTML = member.isDeceased
-    ? `Born ${member.birthYear || "Unknown"} &ndash; Passed ${member.deathYear || "Unknown"}`
-    : `Born ${member.birthYear || "Unknown"}`;
-
-  const bioContainer = document.getElementById("modalMemberBioContainer");
-  const bioText = document.getElementById("modalMemberBioText");
-  if (bioContainer && bioText) {
-    if (member.bio) {
-      bioText.textContent = member.bio;
-      bioContainer.classList.remove("hidden");
-    } else {
-      bioContainer.classList.add("hidden");
-    }
-  }
-
-  const rc = document.getElementById("modalMemberRelations");
-  let html = "";
-  if (member.parentIds?.length) {
-    const pr = member.parentIds.map(id => appData.members.find(m => m.id === id)).filter(Boolean);
-    if (pr.length) html += buildRelSection("Parents", pr);
-  }
-  if (member.spouseIds?.length) {
-    const sr = member.spouseIds.map(id => appData.members.find(m => m.id === id)).filter(Boolean);
-    if (sr.length) html += buildRelSection("Spouse", sr);
-  }
-  if (member.childrenIds?.length) {
-    const cr = member.childrenIds.map(id => appData.members.find(m => m.id === id)).filter(Boolean);
-    if (cr.length) html += buildRelSection(`Children (${cr.length})`, cr);
-  }
-  rc.innerHTML = html || '<p class="text-xs text-slate-500 italic">No family links recorded yet.</p>';
-  modal.classList.remove("hidden");
-}
-
-function buildRelSection(label, people) {
-  return `
-    <div class="mb-3">
-      <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">${label}</span>
-      <div class="flex flex-wrap gap-2">
-        ${people.map(p => `
-          <button class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-amber-600 hover:text-white text-xs text-slate-200 border border-slate-700 transition" onclick="viewMemberDetail('${p.id}')">
-            ${p.firstName} ${p.lastName}
-          </button>
-        `).join("")}
-      </div>
-    </div>`;
-}
-
-/* SCROLL, MENU, UTILS */
 function initThemeAndScroll() {
   initScrollAnimations();
   updateHeroCount();
@@ -780,12 +1482,12 @@ function initThemeAndScroll() {
   const mn = document.getElementById("mobileNav");
   if (mb && mn) {
     mb.addEventListener("click", () => mn.classList.toggle("hidden"));
-    mn.querySelectorAll("a").forEach(l => l.addEventListener("click", () => mn.classList.add("hidden")));
+    mn.querySelectorAll("a").forEach((l) => l.addEventListener("click", () => mn.classList.add("hidden")));
   }
   const rb = document.getElementById("btnResetDatabase");
   if (rb) {
     rb.addEventListener("click", () => {
-      if (confirm("Reset local cache? DB data remains intact.")) {
+      if (confirm("Reset local cache to default historical records? DB records remain intact.")) {
         resetFamilyDataToDefault();
         location.reload();
       }
@@ -796,18 +1498,18 @@ function initThemeAndScroll() {
 function initScrollAnimations() {
   const els = document.querySelectorAll(".reveal-fade-up,.reveal-fade-left,.reveal-fade-right,.reveal-zoom-in");
   if (!("IntersectionObserver" in window)) {
-    els.forEach(el => el.classList.add("reveal-visible"));
+    els.forEach((el) => el.classList.add("reveal-visible"));
     return;
   }
   const obs = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
+    entries.forEach((entry) => {
       if (entry.isIntersecting) {
         entry.target.classList.add("reveal-visible");
         obs.unobserve(entry.target);
       }
     });
   }, { threshold: 0.12, rootMargin: "0px 0px -40px 0px" });
-  els.forEach(el => obs.observe(el));
+  els.forEach((el) => obs.observe(el));
 }
 
 function fireCelebrationConfetti() {

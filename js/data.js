@@ -41,6 +41,49 @@ const KINTU_INITIAL_DATA = {
     { year: "1986", title: "Recording of 'Endugiiro yoruganda rwaba'", category: "Clan Record", description: "Mbabazi Twesige Tadeo (Amooti) and Katotera Jonathan Biferamunda (Akiiki) author the confidential handwritten clan genealogy preserving the Ababwijwa lineage." },
     { year: "2026", title: "Launch of the Living Digital Heritage Portal", category: "Innovation", description: "The contemporary generation digitizes all 148 lineage members across 8 generations, connecting the worldwide diaspora through this interactive archive." }
   ],
+
+  minutes: [
+    {
+      id: "doc-1986-lineage",
+      title: "Endugiiro yoruganda rwaba - Isiitwe: Ababwijwa (1986)",
+      category: "Clan Historical Record",
+      date: "August 1986",
+      recordedBy: "Mr. Mbabazi Twesige Tadeo (Amooti) & Mr. Katotera Jonathan Biferamunda (Akiiki)",
+      summary: "Foundational handwritten genealogical registry documenting 148 family members across 8 generations from patriarch Banjwa, establishing ancestral branches, Empaako praise names, and cultural customs.",
+      status: "Archived & Digitized",
+      tags: ["Lineage Registry", "Empaako", "Bunyoro-Kitara", "Founding Fathers"]
+    },
+    {
+      id: "doc-2025-annual",
+      title: "Annual Kintu Family General Council Assembly",
+      category: "Council Minutes",
+      date: "December 27, 2025",
+      recordedBy: "Family Secretariat (Akiiki & Amooti Branches)",
+      summary: "Annual meeting convening elder and youth representatives. Key resolutions: Authorization of the digital heritage portal, boundary conservation for ancestral burial grounds, and establishment of the Youth Educational Bursary.",
+      status: "Ratified",
+      tags: ["General Assembly", "Resolutions", "Education Fund", "Homestead"]
+    },
+    {
+      id: "doc-2025-land",
+      title: "Ancestral Homestead & Heritage Conservation Report",
+      category: "Committee Report",
+      date: "August 14, 2025",
+      recordedBy: "Elder Stewardship Committee (Hoima & Bunyoro)",
+      summary: "Comprehensive survey of clan land boundaries, environmental tree planting project, restoration of the central meeting pavilion, and stewardship of family historical artifacts.",
+      status: "Adopted",
+      tags: ["Land Stewardship", "Conservation", "Hoima", "Ancestral Grounds"]
+    },
+    {
+      id: "doc-2026-reunion",
+      title: "Reunion 2026 Executive Planning Council Resolutions",
+      category: "Planning Minutes",
+      date: "January 18, 2026",
+      recordedBy: "2026 Reunion Organizing Committee",
+      summary: "Approved budget and schedule for the December 18-21, 2026 gathering. Scheduled events include clan elder blessing ceremony, youth symposium, genealogy book launch, and multi-generation banquet.",
+      status: "In Progress",
+      tags: ["Reunion 2026", "Event Schedule", "Youth Symposium", "RSVP Logistics"]
+    }
+  ],
   members: [
     {
       id: "P001",
@@ -3015,7 +3058,7 @@ const KINTU_INITIAL_DATA = {
   }
 };
 
-const STORAGE_KEY = "kintu_family_data_v4";
+const STORAGE_KEY = "kintu_family_data_v5";
 
 // -------------------------------------------------------
 // LOCAL STORAGE (client-side cache / offline fallback)
@@ -3034,6 +3077,7 @@ function getFamilyData() {
     }
     if (!parsed.gallery) parsed.gallery = [];
     if (!parsed.upcomingReunion) parsed.upcomingReunion = KINTU_INITIAL_DATA.upcomingReunion;
+    if (!parsed.minutes) parsed.minutes = KINTU_INITIAL_DATA.minutes;
     return parsed;
   } catch (e) {
     console.error("Failed parsing localStorage family data", e);
