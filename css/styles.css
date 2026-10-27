@@ -63,16 +63,27 @@ h1, h2, h3, .font-serif-royal { font-family: 'Playfair Display', Georgia, serif;
 .glass-panel-gold { background:rgba(180,83,9,0.08); backdrop-filter:blur(12px); border:1px solid rgba(180,83,9,0.25); }
 .bg-heritage-pattern { background-color:var(--bg-dark); }
 
-/* TREE VIEWPORT */
-.tree-viewport {
-  position:relative; width:100%; height:680px; overflow:hidden;
+/* TREE VIEWPORT (native scroll container) */
+.tree-shell {
+  position:relative; width:100%;
+  border-radius:1.25rem; overflow:hidden;
   background:radial-gradient(circle at center, #1a2535 0%, #0d1520 100%);
-  border-radius:1.25rem; box-shadow:inset 0 2px 14px rgba(0,0,0,0.6);
-  cursor:grab; user-select:none;
-  touch-action:none;
+  box-shadow:inset 0 2px 14px rgba(0,0,0,0.6);
+  border:1px solid rgba(51,65,85,0.6);
 }
-.tree-viewport:active { cursor:grabbing; }
-.tree-canvas-layer { position:absolute; top:0; left:0; transform-origin:0 0; transition:transform 0.08s ease-out; }
+.tree-viewport {
+  position:relative; width:100%; height:680px;
+  overflow:auto;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior-x:contain;
+  touch-action:pan-x pan-y;
+  cursor:grab;
+  scrollbar-width:thin;
+  scrollbar-color:#475569 transparent;
+}
+.tree-viewport.is-dragging { cursor:grabbing; user-select:none; }
+.tree-sizer { position:relative; }
+.tree-canvas-layer { position:absolute; top:0; left:0; transform-origin:0 0; }
 .tree-node-card {
   position:absolute; width:220px; border-radius:14px; padding:12px;
   transition:transform 0.25s cubic-bezier(0.16,1,0.3,1),box-shadow 0.25s ease,border-color 0.25s ease;

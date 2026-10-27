@@ -1,4 +1,4 @@
-﻿// KINTU FAMILY LINEAGE & HERITAGE PORTAL
+// KINTU FAMILY LINEAGE & HERITAGE PORTAL
 // Bunyoro-Kitara Cultural Lineage Data Store
 // Lineage: Ababwijwa Lineage (Endugiiro yoruganda rwaba - Isiitwe: Ababwijwa)
 // Source: 1986 Clan Record by Mr. Mbabazi Twesige Tadeo (Amooti) & Mr. Katotera Jonathan Biferamunda (Akiiki)
@@ -3082,13 +3082,16 @@ async function saveMemberToDB(member) {
 }
 
 async function saveMembersBatchToDB(membersList) {
+  const CHUNK = 20;
   try {
-    const resp = await fetch("/api/members", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(membersList),
-    });
-    if (!resp.ok) throw new Error("POST /api/members batch " + resp.status);
+    for (let i = 0; i < membersList.length; i += CHUNK) {
+      const resp = await fetch("/api/members", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(membersList.slice(i, i + CHUNK)),
+      });
+      if (!resp.ok) throw new Error("POST /api/members batch " + resp.status);
+    }
     return true;
   } catch (err) {
     console.warn("Could not batch save members to DB:", err.message);
