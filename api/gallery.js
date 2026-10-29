@@ -26,8 +26,10 @@ async function ensureTable(client) {
       year TEXT,
       image_url TEXT NOT NULL,
       caption TEXT,
+      is_slideshow BOOLEAN DEFAULT FALSE,
       created_at TIMESTAMPTZ DEFAULT NOW()
     );
+    ALTER TABLE gallery ADD COLUMN IF NOT EXISTS is_slideshow BOOLEAN DEFAULT FALSE;
   `);
 }
 
@@ -51,6 +53,7 @@ export default async function handler(req, res) {
         year: row.year || "",
         image: row.image_url,
         caption: row.caption || "",
+        isSlideshow: Boolean(row.is_slideshow),
       }));
       return res.status(200).json({ photos });
     }
@@ -62,12 +65,13 @@ export default async function handler(req, res) {
       }
 
       await client.query(
-        `INSERT INTO gallery (id, title, category, year, image_url, caption)
-         VALUES ($1, $2, $3, $4, $5, $6)
+        `INSERT INTO gallery (id, title, category, year, image_url, caption, is_slideshow)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
          ON CONFLICT (id) DO UPDATE SET
            title = EXCLUDED.title, category = EXCLUDED.category,
-           year = EXCLUDED.year, image_url = EXCLUDED.image_url, caption = EXCLUDED.caption`,
-        [p.id, p.title, p.category || "Ancestral", p.year || "", p.image, p.caption || ""]
+           year = EXCLUDED.year, image_url = EXCLUDED.image_url, caption = EXCLUDED.caption,
+           is_slideshow = EXCLUDED.is_slideshow`,
+        [p.id, p.title, p.category || "Ancestral", p.year || "", p.image, p.caption || "", Boolean(p.isSlideshow)]
       );
 
       return res.status(201).json({ success: true });

@@ -84,6 +84,36 @@ const KINTU_INITIAL_DATA = {
       tags: ["Reunion 2026", "Event Schedule", "Youth Symposium", "RSVP Logistics"]
     }
   ],
+
+  updates: [
+    {
+      id: "upd-1",
+      title: "Launch of the Living Digital Heritage Portal",
+      category: "Clan Announcement",
+      author: "Family Council Secretariat",
+      content: "We are overjoyed to launch our interactive family lineage portal connecting all 148 relatives across Bunyoro-Kitara and worldwide. Relatives can now add their children, update location, and access historical minutes.",
+      photo: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=800&q=80",
+      createdAt: "2026-10-25T10:00:00Z"
+    },
+    {
+      id: "upd-2",
+      title: "Preparation for Grand Family Reunion (Dec 18-21, 2026)",
+      category: "Reunion & Events",
+      author: "Reunion Organizing Committee",
+      content: "Arrangements for our December 2026 reunion in Bunyoro-Kitara and Kampala are underway. Please RSVP on the portal so the hospitality committee can plan seating and traditional banquets.",
+      photo: "https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=800&q=80",
+      createdAt: "2026-10-15T14:30:00Z"
+    },
+    {
+      id: "upd-3",
+      title: "Welcome to New Descendants & Empaako Blessings",
+      category: "Family Blessings",
+      author: "Elders Council",
+      content: "Congratulations to our family members blessed with newborn children this year! Remember to bestow their ancestral Empaako praise name and register them in Generation 8 of our lineage.",
+      photo: "",
+      createdAt: "2026-09-30T09:15:00Z"
+    }
+  ],
   members: [
     {
       id: "P001",
@@ -3058,7 +3088,7 @@ const KINTU_INITIAL_DATA = {
   }
 };
 
-const STORAGE_KEY = "kintu_family_data_v5";
+const STORAGE_KEY = "kintu_family_data_v6";
 
 // -------------------------------------------------------
 // LOCAL STORAGE (client-side cache / offline fallback)
@@ -3078,6 +3108,7 @@ function getFamilyData() {
     if (!parsed.gallery) parsed.gallery = [];
     if (!parsed.upcomingReunion) parsed.upcomingReunion = KINTU_INITIAL_DATA.upcomingReunion;
     if (!parsed.minutes) parsed.minutes = KINTU_INITIAL_DATA.minutes;
+    if (!parsed.updates || !parsed.updates.length) parsed.updates = KINTU_INITIAL_DATA.updates;
     return parsed;
   } catch (e) {
     console.error("Failed parsing localStorage family data", e);
@@ -3166,6 +3197,33 @@ async function savePhotoToDB(photo) {
     return true;
   } catch (err) {
     console.warn("Could not save photo to DB:", err.message);
+    return false;
+  }
+}
+
+async function fetchUpdatesFromDB() {
+  try {
+    const resp = await fetch("/api/updates");
+    if (!resp.ok) throw new Error("GET /api/updates " + resp.status);
+    const { updates } = await resp.json();
+    return updates || [];
+  } catch (err) {
+    console.warn("Could not load updates from DB:", err.message);
+    return null;
+  }
+}
+
+async function saveUpdateToDB(updateItem) {
+  try {
+    const resp = await fetch("/api/updates", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...updateItem, pin: "KINTU2026" }),
+    });
+    if (!resp.ok) throw new Error("POST /api/updates " + resp.status);
+    return true;
+  } catch (err) {
+    console.warn("Could not save update to DB:", err.message);
     return false;
   }
 }

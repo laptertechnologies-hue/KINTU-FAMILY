@@ -2,6 +2,7 @@
  * KINTU FAMILY WEBSITE - MAIN CONTROLLER
  * Bunyoro-Kitara Cultural Lineage & Living Archive
  * Database: Neon (PostgreSQL) via Vercel Serverless API
+ * Real-Time Synchronization Engine
  */
 
 let appData = null;
@@ -12,10 +13,14 @@ let currentFilterGen = "all";
 let currentSearchQuery = "";
 let currentUploadedPhotoBase64 = "";
 let currentEditPhotoBase64 = "";
+let currentUpdatePhotoBase64 = "";
+let realtimeSyncTimer = null;
+let isSyncing = false;
 
 document.addEventListener("DOMContentLoaded", async () => {
   appData = getFamilyData();
   initHeroSlideshow();
+  initUpdatesSection();
   initGenerationContainers();
   initHistoryTimeline();
   initMemorialWall();
@@ -26,34 +31,73 @@ document.addEventListener("DOMContentLoaded", async () => {
   initModalsAndForms();
   initEditMemberModal();
   initThemeAndScroll();
-  await syncFromDB();
-  console.log("Kintu Family Heritage Portal initialized successfully.");
+
+  // Initial sync from remote DB
+  await syncFromDB(false);
+  // Start automated real-time background sync
+  startRealtimeSync();
+
+  console.log("Kintu Family Heritage Portal initialized with Real-Time Sync.");
 });
 
 /* -------------------------------------------------------
-   1. HERO SLIDESHOW
+   1. HERO SLIDESHOW (Dynamic with User-Added Images)
 ------------------------------------------------------- */
+const DEFAULT_SLIDESHOW_IMAGES = [
+  "https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?auto=format&fit=crop&w=1920&q=80",
+  "https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=1920&q=80",
+  "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1920&q=80",
+  "https://images.unsplash.com/photo-1489392191049-fc10c97e64b6?auto=format&fit=crop&w=1920&q=80"
+];
+
+function getSlideshowImages() {
+  const customSlides = (appData.gallery || [])
+    .filter((g) => g.isSlideshow || g.category === "Slideshow" || g.category === "Homeland")
+    .map((g) => g.image);
+
+  const combined = [...customSlides, ...DEFAULT_SLIDESHOW_IMAGES];
+  // Deduplicate
+  return [...new Set(combined)];
+}
+
 function initHeroSlideshow() {
-  const slides = document.querySelectorAll(".hero-slide");
-  const dots = document.querySelectorAll(".hero-dot");
-  if (!slides.length) return;
+  const slider = document.getElementById("heroSlider");
+  const controls = document.getElementById("heroSlideshowControls");
+  if (!slider) return;
+
+  const images = getSlideshowImages();
+
+  // Render slides dynamically
+  slider.innerHTML = images
+    .map((imgUrl, i) => `
+      <div class="hero-slide ${i === 0 ? "active" : ""}" style="background-image: url('${imgUrl}');"></div>
+    `)
+    .join("");
+
+  // Render dots
+  if (controls) {
+    controls.innerHTML = images
+      .map((_, i) => `
+        <button class="hero-dot ${i === 0 ? "active" : ""}" data-slide="${i}" aria-label="Slide ${i + 1}"></button>
+      `)
+      .join("");
+  }
+
+  const slides = slider.querySelectorAll(".hero-slide");
+  const dots = controls ? controls.querySelectorAll(".hero-dot") : [];
 
   function goToSlide(index) {
-    slides.forEach((s, i) => {
-      s.classList.toggle("active", i === index);
-    });
-    dots.forEach((d, i) => {
-      d.classList.toggle("active", i === index);
-    });
+    slides.forEach((s, i) => s.classList.toggle("active", i === index));
+    dots.forEach((d, i) => d.classList.toggle("active", i === index));
     currentSlideshowIndex = index;
   }
 
   function nextSlide() {
+    if (!slides.length) return;
     const next = (currentSlideshowIndex + 1) % slides.length;
     goToSlide(next);
   }
 
-  // Dots click handler
   dots.forEach((dot) => {
     dot.addEventListener("click", () => {
       const idx = parseInt(dot.dataset.slide) || 0;
@@ -68,10 +112,201 @@ function initHeroSlideshow() {
   }
 
   resetSlideshowTimer();
+
+  // Wire up "Add Image to Slideshow" button
+  const btnHeroAddPhoto = document.getElementById("btnHeroAddPhoto");
+  if (btnHeroAddPhoto) {
+    btnHeroAddPhoto.onclick = () => {
+      const addModal = document.getElementById("addPhotoModal");
+      const isSlideshowCheck = document.getElementById("photoIsSlideshow");
+      if (isSlideshowCheck) isSlideshowCheck.checked = true;
+      if (addModal) addModal.classList.remove("hidden");
+    };
+  }
 }
 
 /* -------------------------------------------------------
-   2. GENERATION CONTAINERS & DIRECTORY (Replaces 2D Canvas)
+   2. RECENT FAMILY UPDATES & ANNOUNCEMENTS SECTION
+------------------------------------------------------- */
+function initUpdatesSection() {
+  renderFamilyUpdates();
+
+  const openBtn = document.getElementById("btnOpenPostUpdate");
+  const modal = document.getElementById("postUpdateModal");
+  const closeBtn = document.getElementById("btnClosePostUpdate");
+  const form = document.getElementById("postUpdateForm");
+  const fileInput = document.getElementById("updatePhotoFileInput");
+  const chooseBtn = document.getElementById("btnChooseUpdatePhoto");
+  const removeBtn = document.getElementById("btnRemoveUpdatePhoto");
+  const previewImg = document.getElementById("updatePhotoPreview");
+  const placeholder = document.getElementById("updatePhotoPlaceholder");
+
+  if (openBtn && modal) {
+    openBtn.onclick = () => modal.classList.remove("hidden");
+  }
+
+  if (closeBtn && modal) {
+    closeBtn.onclick = () => modal.classList.add("hidden");
+  }
+
+  window.addEventListener("click", (e) => {
+    if (e.target === modal) modal.classList.add("hidden");
+  });
+
+  if (chooseBtn && fileInput) {
+    chooseBtn.onclick = () => fileInput.click();
+  }
+
+  if (fileInput) {
+    fileInput.addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      try {
+        const compressed = await compressImage(file, 800, 0.85);
+        currentUpdatePhotoBase64 = compressed;
+        if (previewImg) {
+          previewImg.src = compressed;
+          previewImg.classList.remove("hidden");
+        }
+        if (placeholder) placeholder.classList.add("hidden");
+        if (removeBtn) removeBtn.classList.remove("hidden");
+      } catch (err) {
+        alert("Could not process picture. Please try another image.");
+      }
+    });
+  }
+
+  if (removeBtn) {
+    removeBtn.onclick = () => {
+      currentUpdatePhotoBase64 = "";
+      if (fileInput) fileInput.value = "";
+      if (previewImg) {
+        previewImg.src = "";
+        previewImg.classList.add("hidden");
+      }
+      if (placeholder) placeholder.classList.remove("hidden");
+      removeBtn.classList.add("hidden");
+    };
+  }
+
+  if (form) {
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const pin = document.getElementById("updatePin").value.trim();
+      if (pin.toUpperCase() !== (appData.familyInfo?.familyPin || "KINTU2026")) {
+        alert("Incorrect Family Passcode. Please enter KINTU2026.");
+        return;
+      }
+
+      const title = document.getElementById("updateTitle").value.trim();
+      const category = document.getElementById("updateCategory").value;
+      const author = document.getElementById("updateAuthor").value.trim();
+      const content = document.getElementById("updateContent").value.trim();
+      const photo = currentUpdatePhotoBase64 || "";
+
+      if (!title || !author || !content) {
+        alert("Please fill in the title, author, and message fields.");
+        return;
+      }
+
+      const submitBtn = document.getElementById("btnSubmitPostUpdate");
+      const origText = submitBtn.innerHTML;
+      submitBtn.innerHTML = "Publishing to family...";
+      submitBtn.disabled = true;
+
+      const newUpdate = {
+        id: `upd-${Date.now()}`,
+        title,
+        category,
+        author,
+        content,
+        photo,
+        createdAt: new Date().toISOString()
+      };
+
+      if (!appData.updates) appData.updates = [];
+      appData.updates.unshift(newUpdate);
+      saveFamilyData(appData);
+
+      await saveUpdateToDB(newUpdate);
+
+      submitBtn.innerHTML = origText;
+      submitBtn.disabled = false;
+      modal.classList.add("hidden");
+      form.reset();
+      currentUpdatePhotoBase64 = "";
+      if (previewImg) previewImg.classList.add("hidden");
+      if (placeholder) placeholder.classList.remove("hidden");
+      if (removeBtn) removeBtn.classList.add("hidden");
+
+      renderFamilyUpdates();
+      fireCelebrationConfetti();
+      alert("Family announcement published successfully in real time!");
+    });
+  }
+}
+
+function renderFamilyUpdates() {
+  const grid = document.getElementById("familyUpdatesGrid");
+  if (!grid) return;
+
+  const updates = appData.updates || [];
+  if (!updates.length) {
+    grid.innerHTML = `
+      <div class="col-span-full p-8 text-center bg-white rounded-3xl border border-slate-200 shadow-sm">
+        <p class="text-xs text-slate-500 mb-2">No family updates posted yet.</p>
+        <button onclick="document.getElementById('btnOpenPostUpdate').click()" class="text-xs text-amber-700 font-bold underline">
+          Post the First Family Update &rarr;
+        </button>
+      </div>
+    `;
+    return;
+  }
+
+  grid.innerHTML = updates.map((u) => {
+    let dateStr = "Recent";
+    try {
+      if (u.createdAt) {
+        dateStr = new Date(u.createdAt).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric"
+        });
+      }
+    } catch (e) {}
+
+    return `
+      <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm hover:border-amber-300 transition flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between gap-2 mb-2.5">
+            <span class="text-[10px] font-extrabold uppercase tracking-wider text-amber-800 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-md">
+              ${u.category || "Clan Update"}
+            </span>
+            <span class="text-xs font-semibold text-slate-400">${dateStr}</span>
+          </div>
+          <h4 class="text-base font-bold font-serif-royal text-slate-900 mb-1.5 leading-snug">${u.title}</h4>
+          <p class="text-xs text-slate-500 font-medium mb-3">Posted by: <strong class="text-slate-700">${u.author}</strong></p>
+          <p class="text-xs text-slate-600 leading-relaxed mb-4 whitespace-pre-line">${u.content}</p>
+          ${u.photo ? `
+            <div class="rounded-xl overflow-hidden mb-4 border border-slate-200 aspect-[16/9] cursor-pointer" onclick="openLightbox('${u.photo}','${u.title.replace(/'/g, "\\'")}','${u.author.replace(/'/g, "\\'")}','${dateStr}')">
+              <img src="${u.photo}" class="w-full h-full object-cover hover:scale-105 transition duration-300" alt="Update photo">
+            </div>
+          ` : ""}
+        </div>
+        <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+          <span class="flex items-center gap-1.5 text-emerald-700 font-semibold">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            Verified Family Notice
+          </span>
+          <span class="text-amber-700 font-bold">Kintu Lineage</span>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+/* -------------------------------------------------------
+   3. GENERATION CONTAINERS & DIRECTORY
 ------------------------------------------------------- */
 const GENERATION_METADATA = {
   1: {
@@ -135,7 +370,6 @@ const GENERATION_METADATA = {
 function initGenerationContainers() {
   renderGenerationContainers();
 
-  // Search input in generation section
   const searchInput = document.getElementById("genContainerSearch");
   if (searchInput) {
     searchInput.addEventListener("input", (e) => {
@@ -144,7 +378,6 @@ function initGenerationContainers() {
     });
   }
 
-  // Generation filter buttons
   document.querySelectorAll("#generationFilterRow .filter-gen-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       document.querySelectorAll("#generationFilterRow .filter-gen-btn").forEach((b) => {
@@ -194,7 +427,7 @@ function renderGenerationContainers(query = "", filterGen = "all") {
     }
 
     if (query && genMembers.length === 0) {
-      continue; // Skip empty generations when searching
+      continue;
     }
 
     totalVisible += genMembers.length;
@@ -202,7 +435,6 @@ function renderGenerationContainers(query = "", filterGen = "all") {
 
     html += `
       <div class="gen-container bg-white border border-slate-200 rounded-3xl shadow-sm overflow-hidden" data-gen="${gen}">
-        <!-- Container Header -->
         <div class="gen-container-header p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer select-none border-b border-slate-100" onclick="toggleGenerationContainer(${gen})">
           <div class="flex items-center gap-3.5">
             <div class="w-10 h-10 rounded-2xl bg-amber-100 border border-amber-300 text-amber-800 flex items-center justify-center font-extrabold text-sm shadow-sm shrink-0">
@@ -226,7 +458,6 @@ function renderGenerationContainers(query = "", filterGen = "all") {
           </div>
         </div>
 
-        <!-- Container Body / Member Cards Grid -->
         <div id="genBody-${gen}" class="p-5 sm:p-6 bg-slate-50/50 ${isExpanded ? "" : "hidden"}">
           ${genMembers.length === 0 ? `
             <div class="py-8 text-center text-xs text-slate-400">
@@ -234,7 +465,7 @@ function renderGenerationContainers(query = "", filterGen = "all") {
             </div>
           ` : `
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              ${genMembers.map(m => renderMemberCardHTML(m, genMeta.accent)).join("")}
+              ${genMembers.map((m) => renderMemberCardHTML(m, genMeta.accent)).join("")}
             </div>
           `}
         </div>
@@ -245,9 +476,6 @@ function renderGenerationContainers(query = "", filterGen = "all") {
   if (totalVisible === 0) {
     html = `
       <div class="p-12 text-center bg-white rounded-3xl border border-slate-200 shadow-sm">
-        <div class="w-14 h-14 rounded-2xl bg-amber-50 text-amber-700 flex items-center justify-center mx-auto mb-3">
-          <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-        </div>
         <h4 class="text-lg font-bold text-slate-900 mb-1">No relatives found</h4>
         <p class="text-xs text-slate-500 max-w-md mx-auto mb-5">
           We couldn't find anyone matching "${query}". Try searching by first name, surname, or Empaako praise name.
@@ -269,7 +497,6 @@ function renderMemberCardHTML(m, accentClass) {
   return `
     <div class="gen-member-card ${accentClass}" onclick="openMemberModalById('${m.id}')">
       <div>
-        <!-- Top Info Row -->
         <div class="flex items-start gap-3 mb-3">
           ${m.photo ? `
             <img src="${m.photo}" class="w-12 h-12 rounded-xl object-cover border border-slate-200 shadow-sm shrink-0" alt="${m.firstName}">
@@ -291,14 +518,12 @@ function renderMemberCardHTML(m, accentClass) {
           </div>
         </div>
 
-        <!-- Location -->
         <div class="text-[11px] text-slate-600 flex items-center gap-1.5 mb-2 truncate">
           <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
           <span class="truncate">${m.location || "Bunyoro-Kitara, Uganda"}</span>
         </div>
       </div>
 
-      <!-- Bottom Status & Actions -->
       <div class="pt-2.5 mt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
         <span class="font-semibold text-slate-600 flex items-center gap-1">
           <span class="text-amber-700 font-bold">${childCount}</span> ${childCount === 1 ? "child" : "children"}
@@ -351,7 +576,7 @@ function openMemberModalById(id) {
 }
 
 /* -------------------------------------------------------
-   3. MEMBER PROFILE MODAL & CONTEXTUAL ACTIONS
+   4. MEMBER PROFILE MODAL & CONTEXTUAL ACTIONS
 ------------------------------------------------------- */
 function openMemberModal(member) {
   selectedMember = member;
@@ -403,11 +628,9 @@ function openMemberModal(member) {
     }
   }
 
-  // Relations Section
   const rc = document.getElementById("modalMemberRelations");
   let html = "";
 
-  // Parents
   if (member.parentIds && member.parentIds.length) {
     const parents = member.parentIds.map((id) => appData.members.find((m) => m.id === id)).filter(Boolean);
     if (parents.length) {
@@ -415,7 +638,6 @@ function openMemberModal(member) {
     }
   }
 
-  // Spouse
   if (member.spouseIds && member.spouseIds.length) {
     const spouses = member.spouseIds.map((id) => appData.members.find((m) => m.id === id)).filter(Boolean);
     if (spouses.length) {
@@ -423,7 +645,6 @@ function openMemberModal(member) {
     }
   }
 
-  // Direct Children
   if (member.childrenIds && member.childrenIds.length) {
     const children = member.childrenIds.map((id) => appData.members.find((m) => m.id === id)).filter(Boolean);
     if (children.length) {
@@ -433,7 +654,6 @@ function openMemberModal(member) {
 
   rc.innerHTML = html || '<p class="text-xs text-slate-400 italic">No direct connections recorded yet.</p>';
 
-  // Wire up contextual buttons
   const btnAddChild = document.getElementById("btnModalAddChild");
   const btnAddSpouse = document.getElementById("btnModalAddSpouse");
   const btnEditMember = document.getElementById("btnModalEditMember");
@@ -530,7 +750,7 @@ function triggerAddSpouseToMember(spouse) {
 }
 
 /* -------------------------------------------------------
-   4. EDIT MEMBER MODAL & HANDLERS (NEW)
+   5. EDIT MEMBER MODAL & HANDLERS
 ------------------------------------------------------- */
 function initEditMemberModal() {
   const modal = document.getElementById("editMemberModal");
@@ -597,7 +817,7 @@ function initEditMemberModal() {
       e.preventDefault();
       const pin = document.getElementById("editPin").value.trim();
       if (pin.toUpperCase() !== (appData.familyInfo?.familyPin || "KINTU2026")) {
-        alert("Incorrect Family Passcode. Please enter KINTU2026 to authorize changes.");
+        alert("Incorrect Family Passcode. Please enter KINTU2026.");
         return;
       }
 
@@ -687,7 +907,7 @@ function openEditMemberModal(member) {
 }
 
 /* -------------------------------------------------------
-   5. MINUTES & CLAN DOCUMENT ARCHIVE SECTION (NEW)
+   6. MINUTES & CLAN DOCUMENT ARCHIVE SECTION
 ------------------------------------------------------- */
 function initMinutesSection() {
   const grid = document.getElementById("minutesGrid");
@@ -724,7 +944,7 @@ function initMinutesSection() {
 }
 
 /* -------------------------------------------------------
-   6. PDF EXPORT OF COMPLETE FAMILY REGISTRY & MINUTES
+   7. PDF EXPORT OF COMPLETE FAMILY REGISTRY & MINUTES
 ------------------------------------------------------- */
 function downloadFamilyPDF() {
   const members = appData.members || [];
@@ -780,7 +1000,7 @@ function downloadFamilyPDF() {
   }
 
   let minutesHTML = "";
-  minutes.forEach((doc, idx) => {
+  minutes.forEach((doc) => {
     minutesHTML += `
       <div style="margin-bottom: 16px; padding: 12px; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; page-break-inside: avoid;">
         <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px;">
@@ -802,18 +1022,8 @@ function downloadFamilyPDF() {
       <meta charset="UTF-8">
       <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
       <style>
-        body {
-          font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
-          color: #1e293b;
-          line-height: 1.5;
-          margin: 0;
-          padding: 24px;
-          background: #ffffff;
-        }
-        @media print {
-          body { padding: 12px; }
-          .no-print { display: none; }
-        }
+        body { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; color: #1e293b; line-height: 1.5; margin: 0; padding: 24px; background: #ffffff; }
+        @media print { body { padding: 12px; } .no-print { display: none; } }
       </style>
     </head>
     <body>
@@ -823,8 +1033,6 @@ function downloadFamilyPDF() {
           Print or Save as PDF
         </button>
       </div>
-
-      <!-- Royal Header -->
       <div style="text-align: center; border-bottom: 3px double #b45309; padding-bottom: 16px; margin-bottom: 24px;">
         <span style="font-size: 11px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: #b45309;">
           Bunyoro-Kitara Kingdom &bull; Western Uganda
@@ -839,8 +1047,6 @@ function downloadFamilyPDF() {
           Official Clan Registry Preserving <strong>${members.length} Documented Relatives</strong> across 8 Generations &bull; Exported on ${exportDate}
         </p>
       </div>
-
-      <!-- Historical Record Attribution Banner -->
       <div style="background-color: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 12px 16px; margin-bottom: 24px;">
         <strong style="color: #92400e; font-size: 12px; text-transform: uppercase; display: block; margin-bottom: 4px;">
           Historical Citation: Endugiiro yoruganda rwaba - Isiitwe: Ababwijwa (1986)
@@ -849,22 +1055,16 @@ function downloadFamilyPDF() {
           Recorded in 1986 by clan historians <strong>Mr. Mbabazi Twesige Tadeo (Amooti)</strong> and <strong>Mr. Katotera Jonathan Biferamunda (Akiiki)</strong>. Preserving ancestral roots from patriarch Banjwa, through the elders, patriarchs, clan fathers, and modern descendants.
         </p>
       </div>
-
-      <!-- Lineage Roster -->
       <h2 style="font-family: 'Playfair Display', Georgia, serif; font-size: 18px; color: #0f172a; margin-bottom: 16px;">
         Generational Directory of All Family Members (Gen 1 &ndash; Gen 8)
       </h2>
       ${generationsHTML}
-
-      <!-- Meeting Minutes & Document Archive -->
       <div style="margin-top: 32px; page-break-before: always;">
         <h2 style="font-family: 'Playfair Display', Georgia, serif; font-size: 18px; color: #0f172a; border-bottom: 2px solid #b45309; padding-bottom: 6px; margin-bottom: 16px;">
           Family Assembly Minutes &amp; Council Resolutions
         </h2>
         ${minutesHTML}
       </div>
-
-      <!-- Footer Signoff -->
       <div style="margin-top: 32px; border-top: 1px solid #e2e8f0; padding-top: 16px; text-align: center; font-size: 10px; color: #94a3b8;">
         &copy; 2026 The Kintu Family Lineage &bull; Bunyoro-Kitara Kingdom &bull; Official Digital Heritage Archive
       </div>
@@ -878,7 +1078,159 @@ function downloadFamilyPDF() {
 }
 
 /* -------------------------------------------------------
-   7. TIMELINE, MEMORIAL WALL, GALLERY & DIRECTORY
+   8. GALLERY & PHOTO ARCHIVE
+------------------------------------------------------- */
+function initGallery() {
+  renderGalleryItems("all");
+
+  document.querySelectorAll(".gallery-filter-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".gallery-filter-btn").forEach((b) => {
+        b.classList.remove("bg-amber-700", "text-white", "font-bold");
+        b.classList.add("bg-slate-100", "text-slate-700", "font-semibold");
+      });
+      btn.classList.add("bg-amber-700", "text-white", "font-bold");
+      btn.classList.remove("bg-slate-100", "text-slate-700", "font-semibold");
+      renderGalleryItems(btn.dataset.cat);
+    });
+  });
+
+  const fileInput = document.getElementById("archivePhotoFileInput");
+  const chooseBtn = document.getElementById("btnChooseArchivePhoto");
+  const removeBtn = document.getElementById("btnRemoveArchivePhoto");
+  const previewImg = document.getElementById("archivePhotoPreview");
+  const placeholder = document.getElementById("archivePhotoPlaceholder");
+  let archiveBase64 = "";
+
+  if (chooseBtn && fileInput) {
+    chooseBtn.addEventListener("click", () => fileInput.click());
+  }
+
+  if (fileInput) {
+    fileInput.addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      try {
+        const compressed = await compressImage(file, 900, 0.85);
+        archiveBase64 = compressed;
+        if (previewImg) {
+          previewImg.src = compressed;
+          previewImg.classList.remove("hidden");
+        }
+        if (placeholder) placeholder.classList.add("hidden");
+        if (removeBtn) removeBtn.classList.remove("hidden");
+      } catch (err) {
+        alert("Could not process picture.");
+      }
+    });
+  }
+
+  if (removeBtn) {
+    removeBtn.addEventListener("click", () => {
+      archiveBase64 = "";
+      if (fileInput) fileInput.value = "";
+      if (previewImg) {
+        previewImg.src = "";
+        previewImg.classList.add("hidden");
+      }
+      if (placeholder) placeholder.classList.remove("hidden");
+      removeBtn.classList.add("hidden");
+    });
+  }
+
+  const form = document.getElementById("addPhotoForm");
+  if (form) {
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const title = document.getElementById("photoTitle").value.trim();
+      const urlInput = document.getElementById("photoUrl")?.value.trim() || "";
+      const isSlideshow = document.getElementById("photoIsSlideshow")?.checked || false;
+      const image = archiveBase64 || urlInput;
+      if (!title || !image) {
+        alert("Please select a photo or enter an image URL.");
+        return;
+      }
+      const newPhoto = {
+        id: `img-${Date.now()}`,
+        title,
+        category: document.getElementById("photoCategory").value,
+        year: document.getElementById("photoYear").value.trim() || String(new Date().getFullYear()),
+        image,
+        caption: document.getElementById("photoCaption").value.trim(),
+        isSlideshow: Boolean(isSlideshow)
+      };
+
+      const btn = document.getElementById("btnSubmitArchivePhoto");
+      btn.innerHTML = "Saving to archive...";
+      btn.disabled = true;
+
+      appData.gallery.push(newPhoto);
+      saveFamilyData(appData);
+      await savePhotoToDB(newPhoto);
+
+      btn.innerHTML = "Save Photo to Archive";
+      btn.disabled = false;
+
+      renderGalleryItems("all");
+      // If photo is marked for slideshow, refresh slideshow immediately!
+      if (isSlideshow) {
+        initHeroSlideshow();
+      }
+
+      document.getElementById("addPhotoModal").classList.add("hidden");
+      form.reset();
+      archiveBase64 = "";
+      if (previewImg) previewImg.classList.add("hidden");
+      if (placeholder) placeholder.classList.remove("hidden");
+      if (removeBtn) removeBtn.classList.add("hidden");
+      alert(isSlideshow ? "Photo added to archive and featured on the Hero Slideshow!" : "Photo contributed to the family archive!");
+    });
+  }
+}
+
+function renderGalleryItems(category) {
+  const grid = document.getElementById("galleryGrid");
+  if (!grid) return;
+
+  if (!appData.gallery || !appData.gallery.length) {
+    grid.innerHTML = `
+      <div class="col-span-full text-center py-12 px-4 bg-white rounded-3xl border border-slate-200 shadow-sm">
+        <h4 class="text-base font-bold text-slate-900 mb-1">Gallery Ready for Memories</h4>
+        <p class="text-xs text-slate-500 max-w-md mx-auto mb-4">No photos uploaded yet. Be the first to contribute a family moment.</p>
+        <button onclick="document.getElementById('addPhotoModal').classList.remove('hidden')" class="px-4 py-2 rounded-xl bg-amber-700 text-white text-xs font-bold shadow-sm transition">
+          Upload First Photo
+        </button>
+      </div>
+    `;
+    return;
+  }
+
+  const items = category === "all" ? appData.gallery : appData.gallery.filter((g) => g.category.toLowerCase() === category.toLowerCase());
+  grid.innerHTML = items.map((img) => `
+    <div class="group relative rounded-2xl overflow-hidden bg-white border border-slate-200 shadow-sm aspect-[4/3] cursor-pointer hover:border-amber-400 transition" onclick="openLightbox('${img.image}','${img.title.replace(/'/g, "\\'")}','${(img.caption || "").replace(/'/g, "\\'")}','${img.year}')">
+      <img src="${img.image}" alt="${img.title}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+      <div class="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/20 to-transparent p-4 flex flex-col justify-end">
+        <div class="flex items-center justify-between mb-1">
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/90 text-slate-800 shadow-sm">${img.category}</span>
+          <span class="text-[11px] text-amber-300 font-bold">${img.year}</span>
+        </div>
+        <h5 class="text-sm font-bold text-white truncate">${img.title}</h5>
+        <p class="text-xs text-slate-200 line-clamp-1">${img.caption || ""}</p>
+      </div>
+    </div>
+  `).join("");
+}
+
+function openLightbox(src, title, caption, year) {
+  document.getElementById("lightboxImg").src = src;
+  document.getElementById("lightboxTitle").textContent = title;
+  document.getElementById("lightboxCaption").textContent = caption || "";
+  document.getElementById("lightboxYear").textContent = year || "";
+  document.getElementById("lightboxModal").classList.remove("hidden");
+}
+
+/* -------------------------------------------------------
+   9. TIMELINE, MEMORIAL, DIRECTORY & REUNION
 ------------------------------------------------------- */
 function initHistoryTimeline() {
   const c = document.getElementById("timelineList");
@@ -940,148 +1292,6 @@ function initMemorialWall() {
       </div>
     </div>
   `).join("");
-}
-
-function initGallery() {
-  renderGalleryItems("all");
-
-  document.querySelectorAll(".gallery-filter-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      document.querySelectorAll(".gallery-filter-btn").forEach((b) => {
-        b.classList.remove("bg-amber-700", "text-white", "font-bold");
-        b.classList.add("bg-slate-100", "text-slate-700", "font-semibold");
-      });
-      btn.classList.add("bg-amber-700", "text-white", "font-bold");
-      btn.classList.remove("bg-slate-100", "text-slate-700", "font-semibold");
-      renderGalleryItems(btn.dataset.cat);
-    });
-  });
-
-  // Archive photo upload
-  const fileInput = document.getElementById("archivePhotoFileInput");
-  const chooseBtn = document.getElementById("btnChooseArchivePhoto");
-  const removeBtn = document.getElementById("btnRemoveArchivePhoto");
-  const previewImg = document.getElementById("archivePhotoPreview");
-  const placeholder = document.getElementById("archivePhotoPlaceholder");
-  let archiveBase64 = "";
-
-  if (chooseBtn && fileInput) {
-    chooseBtn.addEventListener("click", () => fileInput.click());
-  }
-
-  if (fileInput) {
-    fileInput.addEventListener("change", async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      try {
-        const compressed = await compressImage(file, 900, 0.85);
-        archiveBase64 = compressed;
-        if (previewImg) {
-          previewImg.src = compressed;
-          previewImg.classList.remove("hidden");
-        }
-        if (placeholder) placeholder.classList.add("hidden");
-        if (removeBtn) removeBtn.classList.remove("hidden");
-      } catch (err) {
-        alert("Could not process picture.");
-      }
-    });
-  }
-
-  if (removeBtn) {
-    removeBtn.addEventListener("click", () => {
-      archiveBase64 = "";
-      if (fileInput) fileInput.value = "";
-      if (previewImg) {
-        previewImg.src = "";
-        previewImg.classList.add("hidden");
-      }
-      if (placeholder) placeholder.classList.remove("hidden");
-      removeBtn.classList.add("hidden");
-    });
-  }
-
-  const form = document.getElementById("addPhotoForm");
-  if (form) {
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const title = document.getElementById("photoTitle").value.trim();
-      const urlInput = document.getElementById("photoUrl")?.value.trim() || "";
-      const image = archiveBase64 || urlInput;
-      if (!title || !image) {
-        alert("Please select a photo or enter an image URL.");
-        return;
-      }
-      const newPhoto = {
-        id: `img-${Date.now()}`,
-        title,
-        category: document.getElementById("photoCategory").value,
-        year: document.getElementById("photoYear").value.trim() || String(new Date().getFullYear()),
-        image,
-        caption: document.getElementById("photoCaption").value.trim()
-      };
-
-      const btn = document.getElementById("btnSubmitArchivePhoto");
-      btn.innerHTML = "Saving...";
-      btn.disabled = true;
-
-      appData.gallery.push(newPhoto);
-      saveFamilyData(appData);
-      await savePhotoToDB(newPhoto);
-
-      btn.innerHTML = "Save Photo to Archive";
-      btn.disabled = false;
-
-      renderGalleryItems("all");
-      document.getElementById("addPhotoModal").classList.add("hidden");
-      form.reset();
-      archiveBase64 = "";
-      if (previewImg) previewImg.classList.add("hidden");
-      if (placeholder) placeholder.classList.remove("hidden");
-      alert("Photo contributed to the family archive!");
-    });
-  }
-}
-
-function renderGalleryItems(category) {
-  const grid = document.getElementById("galleryGrid");
-  if (!grid) return;
-
-  if (!appData.gallery || !appData.gallery.length) {
-    grid.innerHTML = `
-      <div class="col-span-full text-center py-12 px-4 bg-white rounded-3xl border border-slate-200 shadow-sm">
-        <h4 class="text-base font-bold text-slate-900 mb-1">Gallery Ready for Memories</h4>
-        <p class="text-xs text-slate-500 max-w-md mx-auto mb-4">No photos uploaded yet. Be the first to contribute a family moment.</p>
-        <button onclick="document.getElementById('addPhotoModal').classList.remove('hidden')" class="px-4 py-2 rounded-xl bg-amber-700 text-white text-xs font-bold shadow-sm transition">
-          Upload First Photo
-        </button>
-      </div>
-    `;
-    return;
-  }
-
-  const items = category === "all" ? appData.gallery : appData.gallery.filter((g) => g.category.toLowerCase() === category.toLowerCase());
-  grid.innerHTML = items.map((img) => `
-    <div class="group relative rounded-2xl overflow-hidden bg-white border border-slate-200 shadow-sm aspect-[4/3] cursor-pointer hover:border-amber-400 transition" onclick="openLightbox('${img.image}','${img.title}','${img.caption}','${img.year}')">
-      <img src="${img.image}" alt="${img.title}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
-      <div class="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/20 to-transparent p-4 flex flex-col justify-end">
-        <div class="flex items-center justify-between mb-1">
-          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/90 text-slate-800 shadow-sm">${img.category}</span>
-          <span class="text-[11px] text-amber-300 font-bold">${img.year}</span>
-        </div>
-        <h5 class="text-sm font-bold text-white truncate">${img.title}</h5>
-        <p class="text-xs text-slate-200 line-clamp-1">${img.caption || ""}</p>
-      </div>
-    </div>
-  `).join("");
-}
-
-function openLightbox(src, title, caption, year) {
-  document.getElementById("lightboxImg").src = src;
-  document.getElementById("lightboxTitle").textContent = title;
-  document.getElementById("lightboxCaption").textContent = caption || "";
-  document.getElementById("lightboxYear").textContent = year || "";
-  document.getElementById("lightboxModal").classList.remove("hidden");
 }
 
 function initDirectory() {
@@ -1152,9 +1362,6 @@ function initDirectory() {
   filterAndRender();
 }
 
-/* -------------------------------------------------------
-   8. REUNION RSVP & DATABASE SYNC
-------------------------------------------------------- */
 function initReunion() {
   fetchRsvpTotal().then((total) => {
     if (total > 0) {
@@ -1175,50 +1382,109 @@ function initReunion() {
         const el = document.getElementById("rsvpConfirmedNumber");
         if (el) el.textContent = total;
       }
-      alert(`Thank you, ${name}! RSVP for ${count} guest(s) recorded.`);
+      alert(`Thank you, ${name}! RSVP for ${count} guest(s) recorded in real time.`);
       f.reset();
     });
   }
 }
 
-async function syncFromDB() {
-  const [dbMembers, dbGallery] = await Promise.all([fetchMembersFromDB(), fetchGalleryFromDB()]);
-  let changed = false;
+/* -------------------------------------------------------
+   10. REAL-TIME SYNCHRONIZATION ENGINE
+------------------------------------------------------- */
+function startRealtimeSync() {
+  if (realtimeSyncTimer) clearInterval(realtimeSyncTimer);
 
-  if (dbMembers !== null) {
-    const memberMap = new Map();
-    // 1. Seed complete 148 historical members
-    (KINTU_INITIAL_DATA.members || []).forEach((m) => memberMap.set(m.id, { ...m }));
-    // 2. Overlay live Neon DB records
-    dbMembers.forEach((m) => memberMap.set(m.id, { ...m }));
+  // Background polling every 8 seconds
+  realtimeSyncTimer = setInterval(async () => {
+    if (document.visibilityState === "visible") {
+      await syncFromDB(true);
+    }
+  }, 8000);
 
-    const merged = Array.from(memberMap.values());
-    if (merged.length !== appData.members.length || dbMembers.length < KINTU_INITIAL_DATA.members.length) {
-      appData.members = merged;
-      changed = true;
-      if (dbMembers.length < KINTU_INITIAL_DATA.members.length) {
-        saveMembersBatchToDB(KINTU_INITIAL_DATA.members).catch(console.warn);
+  // Immediate sync when tab regains focus
+  window.addEventListener("focus", () => syncFromDB(true));
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") syncFromDB(true);
+  });
+}
+
+async function syncFromDB(isBackground = false) {
+  if (isSyncing) return;
+  isSyncing = true;
+
+  const liveBadge = document.getElementById("liveSyncBadge");
+
+  try {
+    const [dbMembers, dbGallery, dbUpdates, dbRsvp] = await Promise.all([
+      fetchMembersFromDB(),
+      fetchGalleryFromDB(),
+      fetchUpdatesFromDB(),
+      fetchRsvpTotal()
+    ]);
+
+    let changed = false;
+
+    // 1. Members
+    if (dbMembers !== null) {
+      const memberMap = new Map();
+      (KINTU_INITIAL_DATA.members || []).forEach((m) => memberMap.set(m.id, { ...m }));
+      dbMembers.forEach((m) => memberMap.set(m.id, { ...m }));
+      const merged = Array.from(memberMap.values());
+
+      if (merged.length !== appData.members.length || JSON.stringify(merged) !== JSON.stringify(appData.members)) {
+        appData.members = merged;
+        changed = true;
+        if (dbMembers.length < KINTU_INITIAL_DATA.members.length) {
+          saveMembersBatchToDB(KINTU_INITIAL_DATA.members).catch(console.warn);
+        }
       }
     }
-  }
 
-  if (dbGallery !== null && dbGallery.length > 0) {
-    appData.gallery = dbGallery;
-    changed = true;
-  }
+    // 2. Gallery
+    if (dbGallery !== null && dbGallery.length > 0) {
+      if (JSON.stringify(dbGallery) !== JSON.stringify(appData.gallery)) {
+        appData.gallery = dbGallery;
+        changed = true;
+      }
+    }
 
-  if (changed) {
-    saveFamilyData(appData);
-    renderGenerationContainers(currentSearchQuery, currentFilterGen);
-    initDirectory();
-    initMemorialWall();
-    renderGalleryItems("all");
-    updateHeroCount();
-  }
+    // 3. Family Updates
+    if (dbUpdates !== null && dbUpdates.length > 0) {
+      if (JSON.stringify(dbUpdates) !== JSON.stringify(appData.updates)) {
+        appData.updates = dbUpdates;
+        changed = true;
+        renderFamilyUpdates();
+      }
+    }
 
-  const rsvpTotal = await fetchRsvpTotal();
-  const rsvpEl = document.getElementById("rsvpConfirmedNumber");
-  if (rsvpEl && rsvpTotal > 0) rsvpEl.textContent = rsvpTotal;
+    // 4. RSVP Total
+    if (dbRsvp > 0) {
+      const rsvpEl = document.getElementById("rsvpConfirmedNumber");
+      if (rsvpEl && rsvpEl.textContent !== String(dbRsvp)) {
+        rsvpEl.textContent = dbRsvp;
+      }
+    }
+
+    if (changed) {
+      saveFamilyData(appData);
+      renderGenerationContainers(currentSearchQuery, currentFilterGen);
+      initDirectory();
+      initMemorialWall();
+      renderGalleryItems("all");
+      updateHeroCount();
+      initHeroSlideshow();
+    }
+
+    // Update live badge status
+    if (liveBadge) {
+      liveBadge.classList.remove("bg-amber-50", "text-amber-800", "border-amber-200");
+      liveBadge.classList.add("bg-emerald-50", "text-emerald-800", "border-emerald-200");
+    }
+  } catch (err) {
+    if (!isBackground) console.warn("Sync error:", err.message);
+  } finally {
+    isSyncing = false;
+  }
 }
 
 function updateHeroCount() {
@@ -1227,7 +1493,7 @@ function updateHeroCount() {
 }
 
 /* -------------------------------------------------------
-   9. ADD MEMBER FORM LOGIC
+   11. ADD MEMBER FORM LOGIC
 ------------------------------------------------------- */
 function initModalsAndForms() {
   const openAddBtn = document.getElementById("btnOpenAddMember");
@@ -1256,6 +1522,8 @@ function initModalsAndForms() {
     if (e.target === lb) lb.classList.add("hidden");
     const pm = document.getElementById("addPhotoModal");
     if (e.target === pm) pm.classList.add("hidden");
+    const um = document.getElementById("postUpdateModal");
+    if (e.target === um) um.classList.add("hidden");
   });
 
   const decCheck = document.getElementById("regIsDeceased");
@@ -1407,7 +1675,7 @@ function initModalsAndForms() {
       updateHeroCount();
       fireCelebrationConfetti();
 
-      setTimeout(() => alert(`${firstName} ${lastName} added to the Kintu family registry!`), 250);
+      setTimeout(() => alert(`${firstName} ${lastName} added to the Kintu family registry in real time!`), 250);
     });
   }
 }
@@ -1439,7 +1707,7 @@ function populateParentDropdowns() {
 }
 
 /* -------------------------------------------------------
-   10. UTILITIES, IMAGE COMPRESSION & CONFETTI
+   12. UTILITIES, IMAGE COMPRESSION & CONFETTI
 ------------------------------------------------------- */
 function compressImage(file, maxDimension = 500, quality = 0.82) {
   return new Promise((resolve, reject) => {
