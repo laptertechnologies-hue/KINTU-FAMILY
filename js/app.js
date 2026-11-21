@@ -909,38 +909,365 @@ function openEditMemberModal(member) {
 /* -------------------------------------------------------
    6. MINUTES & CLAN DOCUMENT ARCHIVE SECTION
 ------------------------------------------------------- */
+let currentSelectedMinute = null;
+
 function initMinutesSection() {
   const grid = document.getElementById("minutesGrid");
   if (!grid) return;
 
   const minutes = appData.minutes || [];
-  grid.innerHTML = minutes.map((doc) => `
-    <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm hover:border-amber-300 transition flex flex-col justify-between">
-      <div>
-        <div class="flex items-center justify-between gap-2 mb-2">
-          <span class="text-[10px] font-extrabold uppercase tracking-widest text-amber-800 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-md">
-            ${doc.category}
-          </span>
-          <span class="text-xs font-semibold text-slate-500">${doc.date}</span>
+  grid.innerHTML = minutes.map((doc) => {
+    const attendeeCount = (doc.attendees || []).length;
+    return `
+      <div class="p-6 rounded-3xl bg-white border border-slate-200/90 shadow-sm hover:border-amber-300 hover:shadow-md transition flex flex-col justify-between">
+        <div>
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-2.5">
+            <span class="text-[10px] font-extrabold uppercase tracking-widest text-amber-900 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-lg">
+              ${doc.category}
+            </span>
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-semibold text-slate-500">${doc.date}</span>
+              ${attendeeCount > 0 ? `<span class="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full">${attendeeCount} Attendees</span>` : ""}
+            </div>
+          </div>
+          <h4 class="text-base sm:text-lg font-bold font-serif-royal text-slate-900 mb-1.5 leading-snug">${doc.title}</h4>
+          <p class="text-xs text-slate-500 font-medium mb-1">
+            <span class="text-slate-400">Venue:</span> <strong class="text-slate-700 font-semibold">${doc.venue || "Bunyoro-Kitara"}</strong>
+          </p>
+          <p class="text-xs text-slate-500 font-medium mb-3">
+            <span class="text-slate-400">Recorded by:</span> <strong class="text-slate-700">${doc.recordedBy}</strong>
+          </p>
+          <p class="text-xs text-slate-600 leading-relaxed mb-4 line-clamp-3">${doc.summary}</p>
+          <div class="flex flex-wrap gap-1.5 mb-4">
+            ${(doc.tags || []).map(t => `<span class="text-[10px] bg-slate-100 text-slate-600 px-2.5 py-0.5 rounded-md font-medium">#${t}</span>`).join("")}
+          </div>
         </div>
-        <h4 class="text-base font-bold font-serif-royal text-slate-900 mb-1.5">${doc.title}</h4>
-        <p class="text-xs text-slate-500 font-medium mb-3">Recorded by: <strong class="text-slate-700">${doc.recordedBy}</strong></p>
-        <p class="text-xs text-slate-600 leading-relaxed mb-4">${doc.summary}</p>
-        <div class="flex flex-wrap gap-1.5 mb-4">
-          ${doc.tags.map(t => `<span class="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md font-medium">#${t}</span>`).join("")}
+        <div class="pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-xs">
+          <span class="text-emerald-700 font-bold flex items-center gap-1.5">
+            <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            ${doc.status}
+          </span>
+          <div class="flex items-center gap-2">
+            <button onclick="downloadSingleMinutePDF('${doc.id}')" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+              <span>PDF</span>
+            </button>
+            <button onclick="openMinuteDetail('${doc.id}')" class="px-3.5 py-1.5 rounded-xl bg-amber-700 hover:bg-amber-800 text-white font-bold text-xs shadow-sm transition flex items-center gap-1.5">
+              <span>View Full Minutes &rarr;</span>
+            </button>
+          </div>
         </div>
       </div>
-      <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-        <span class="text-emerald-700 font-bold flex items-center gap-1.5">
-          <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          ${doc.status}
-        </span>
-        <button onclick="downloadFamilyPDF()" class="text-amber-700 hover:text-amber-900 font-bold flex items-center gap-1 underline">
-          Download Record &rarr;
+    `;
+  }).join("");
+
+  initMinuteDetailModal();
+}
+
+function initMinuteDetailModal() {
+  const modal = document.getElementById("minuteDetailModal");
+  if (!modal) return;
+
+  const closeBtn = document.getElementById("btnCloseMinuteDetail");
+  const closeBottomBtn = document.getElementById("btnCloseMinuteDetailBottom");
+  const searchInput = document.getElementById("minuteAttendeeSearch");
+  const downloadBtn = document.getElementById("btnDownloadMinuteRecord");
+
+  const closeModal = () => modal.classList.add("hidden");
+
+  if (closeBtn) closeBtn.onclick = closeModal;
+  if (closeBottomBtn) closeBottomBtn.onclick = closeModal;
+
+  modal.onclick = (e) => {
+    if (e.target === modal) closeModal();
+  };
+
+  if (searchInput) {
+    searchInput.oninput = (e) => {
+      const q = e.target.value.toLowerCase().trim();
+      renderMinuteAttendees(currentSelectedMinute, q);
+    };
+  }
+
+  if (downloadBtn) {
+    downloadBtn.onclick = () => {
+      if (currentSelectedMinute) {
+        downloadSingleMinutePDF(currentSelectedMinute.id);
+      }
+    };
+  }
+}
+
+function openMinuteDetail(docId) {
+  const minutes = appData.minutes || [];
+  const doc = minutes.find(m => m.id === docId);
+  if (!doc) return;
+
+  currentSelectedMinute = doc;
+  const modal = document.getElementById("minuteDetailModal");
+  if (!modal) return;
+
+  // Header
+  const catEl = document.getElementById("minuteDetailCategory");
+  const statEl = document.getElementById("minuteDetailStatus");
+  const dateEl = document.getElementById("minuteDetailDate");
+  const titleEl = document.getElementById("minuteDetailTitle");
+  if (catEl) catEl.textContent = doc.category || "Clan Record";
+  if (statEl) statEl.textContent = doc.status || "Archived";
+  if (dateEl) dateEl.textContent = doc.date || "";
+  if (titleEl) titleEl.textContent = doc.title || "";
+
+  // Metadata cards
+  const venueEl = document.getElementById("minuteDetailVenue");
+  const chairEl = document.getElementById("minuteDetailChairperson");
+  const recEl = document.getElementById("minuteDetailRecordedBy");
+  const prayersEl = document.getElementById("minuteDetailPrayers");
+  if (venueEl) venueEl.textContent = doc.venue || "Bunyoro-Kitara";
+  if (chairEl) chairEl.textContent = doc.chairperson || "Council of Elders";
+  if (recEl) recEl.textContent = doc.recordedBy || "Clan Secretariat";
+  if (prayersEl) prayersEl.textContent = doc.openingPrayer ? `Open: ${doc.openingPrayer}` : "Opening & Closing Prayers observed";
+
+  // Summary
+  const sumEl = document.getElementById("minuteDetailSummary");
+  if (sumEl) sumEl.textContent = doc.summary || "";
+
+  // Agenda
+  const agendaEl = document.getElementById("minuteDetailAgenda");
+  if (agendaEl) {
+    const agendaList = doc.agenda && doc.agenda.length ? doc.agenda : ["Family lineage preservation", "General assembly deliberations"];
+    agendaEl.innerHTML = agendaList.map((item, idx) => `
+      <li class="flex items-start gap-2.5 p-2 rounded-xl bg-white border border-slate-100">
+        <span class="w-5 h-5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">${idx + 1}</span>
+        <span class="leading-relaxed">${item}</span>
+      </li>
+    `).join("");
+  }
+
+  // Discussions
+  const discEl = document.getElementById("minuteDetailDiscussions");
+  if (discEl) {
+    const discList = doc.keyDiscussions && doc.keyDiscussions.length ? doc.keyDiscussions : ["Matters arising and historical verification discussed thoroughly."];
+    discEl.innerHTML = discList.map((item) => `
+      <li class="flex items-start gap-2 p-2 rounded-xl bg-white border border-slate-100">
+        <svg class="w-4 h-4 text-amber-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4"/></svg>
+        <span class="leading-relaxed">${item}</span>
+      </li>
+    `).join("");
+  }
+
+  // Resolutions
+  const resEl = document.getElementById("minuteDetailResolutions");
+  if (resEl) {
+    const resList = doc.resolutions && doc.resolutions.length ? doc.resolutions : ["Resolutions unanimously endorsed by the council."];
+    resEl.innerHTML = resList.map((item) => `
+      <li class="flex items-start gap-2.5 p-2.5 rounded-xl bg-white border border-emerald-100 shadow-2xs">
+        <span class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-extrabold flex items-center justify-center shrink-0 mt-0.5">&check;</span>
+        <span class="leading-relaxed font-medium text-slate-800">${item}</span>
+      </li>
+    `).join("");
+  }
+
+  // Reset attendee search input
+  const searchInput = document.getElementById("minuteAttendeeSearch");
+  if (searchInput) searchInput.value = "";
+
+  // Render Attendees
+  renderMinuteAttendees(doc, "");
+
+  modal.classList.remove("hidden");
+}
+
+function renderMinuteAttendees(doc, filterQuery = "") {
+  if (!doc) return;
+  const listEl = document.getElementById("minuteDetailAttendeesList");
+  const countEl = document.getElementById("minuteDetailAttendeeCount");
+  if (!listEl) return;
+
+  const rawAttendees = doc.attendees || [];
+  let filtered = rawAttendees;
+
+  if (filterQuery) {
+    filtered = rawAttendees.filter(a => {
+      const text = typeof a === "string" ? a : `${a.name || ""} ${a.phone || ""} ${a.branch || ""}`;
+      return text.toLowerCase().includes(filterQuery);
+    });
+  }
+
+  if (countEl) countEl.textContent = `${filtered.length} of ${rawAttendees.length}`;
+
+  if (!filtered.length) {
+    listEl.innerHTML = `
+      <div class="col-span-full py-6 text-center text-xs text-slate-400">
+        No attendees matched "${filterQuery}".
+      </div>
+    `;
+    return;
+  }
+
+  listEl.innerHTML = filtered.map((item) => {
+    let name = "";
+    let phone = "";
+    let extra = "";
+
+    if (typeof item === "string") {
+      name = item;
+      const phoneMatch = item.match(/\((07[0-9]{8}[^\)]*)\)/);
+      if (phoneMatch) {
+        phone = phoneMatch[1];
+        name = item.replace(/\(07[0-9]{8}[^\)]*\)/, "").trim();
+      }
+    } else if (item && typeof item === "object") {
+      name = item.name || "";
+      phone = item.phone || "";
+      extra = item.branch || item.role || "";
+    }
+
+    return `
+      <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 hover:bg-amber-50/50 hover:border-amber-200 transition flex items-center justify-between gap-2">
+        <div class="truncate">
+          <p class="text-xs font-bold text-slate-900 truncate">${name}</p>
+          ${extra ? `<p class="text-[10px] text-slate-500 font-medium truncate">${extra}</p>` : ""}
+        </div>
+        ${phone ? `
+          <a href="tel:${phone.split('/')[0].trim()}" class="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-200 shrink-0 hover:bg-amber-200 transition">
+            ${phone.split('/')[0].trim()}
+          </a>
+        ` : `
+          <span class="text-[9px] font-bold uppercase tracking-wider text-slate-400 bg-white border border-slate-200 px-1.5 py-0.5 rounded shrink-0">Present</span>
+        `}
+      </div>
+    `;
+  }).join("");
+}
+
+function downloadSingleMinutePDF(minuteId) {
+  const minutes = appData.minutes || [];
+  const doc = minutes.find(m => m.id === minuteId);
+  if (!doc) return;
+
+  let printWindow = window.open("", "_blank");
+  if (!printWindow) {
+    alert("Please allow pop-ups in your browser to view and print the minutes record.");
+    return;
+  }
+
+  const exportDate = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+  const attendees = doc.attendees || [];
+
+  const agendaHTML = (doc.agenda && doc.agenda.length) 
+    ? doc.agenda.map((a, i) => `<li style="margin-bottom: 6px;"><strong>${i+1}.</strong> ${a}</li>`).join("")
+    : "<li>Lineage preservation & clan council matters.</li>";
+
+  const discHTML = (doc.keyDiscussions && doc.keyDiscussions.length)
+    ? doc.keyDiscussions.map(d => `<li style="margin-bottom: 6px;">${d}</li>`).join("")
+    : "<li>Detailed deliberations recorded in clan archives.</li>";
+
+  const resHTML = (doc.resolutions && doc.resolutions.length)
+    ? doc.resolutions.map(r => `<li style="margin-bottom: 6px; color: #065f46; font-weight: 600;">&bull; ${r}</li>`).join("")
+    : "<li>Resolutions confirmed by council consensus.</li>";
+
+  const attendeesHTML = attendees.map((item, idx) => {
+    const text = typeof item === "string" ? item : `${item.name}${item.phone ? ` (${item.phone})` : ""}`;
+    return `<div style="padding: 4px 6px; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; font-size: 10px;">${idx + 1}. ${text}</div>`;
+  }).join("");
+
+  const docHTML = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>${doc.title} - Official Minutes Record</title>
+      <meta charset="UTF-8">
+      <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+      <style>
+        body { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; color: #1e293b; line-height: 1.5; margin: 0; padding: 24px; background: #ffffff; }
+        @media print { body { padding: 12px; } .no-print { display: none; } }
+      </style>
+    </head>
+    <body>
+      <div class="no-print" style="margin-bottom: 20px; padding: 12px; background-color: #fef3c7; border: 1px solid #fde68a; border-radius: 8px; text-align: center;">
+        <span style="font-weight: bold; font-size: 13px; color: #92400e;">Official Clan Minutes Document</span>
+        <button onclick="window.print()" style="margin-left: 14px; padding: 6px 16px; background-color: #b45309; color: #ffffff; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">
+          Print / Save PDF
         </button>
       </div>
-    </div>
-  `).join("");
+
+      <div style="text-align: center; border-bottom: 3px double #b45309; padding-bottom: 16px; margin-bottom: 20px;">
+        <span style="font-size: 11px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: #b45309;">
+          Bunyoro-Kitara Kingdom &bull; Ababwijwa Clan &bull; Kintu Family
+        </span>
+        <h1 style="font-family: 'Playfair Display', Georgia, serif; font-size: 22px; color: #0f172a; margin: 6px 0 4px 0;">
+          ${doc.title}
+        </h1>
+        <p style="font-size: 12px; color: #64748b; margin: 0;">
+          <strong>Date:</strong> ${doc.date} &bull; <strong>Venue:</strong> ${doc.venue || "Bunyoro"} &bull; <strong>Status:</strong> ${doc.status}
+        </p>
+      </div>
+
+      <table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 18px; background-color: #fffbeb; border: 1px solid #fde68a;">
+        <tr>
+          <td style="padding: 8px 12px; border: 1px solid #fde68a;"><strong>Chairperson:</strong> ${doc.chairperson || "Clan Elders"}</td>
+          <td style="padding: 8px 12px; border: 1px solid #fde68a;"><strong>Recorded By:</strong> ${doc.recordedBy}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 12px; border: 1px solid #fde68a;"><strong>Opening Prayer:</strong> ${doc.openingPrayer || "Observed"}</td>
+          <td style="padding: 8px 12px; border: 1px solid #fde68a;"><strong>Closing Prayer:</strong> ${doc.closingPrayer || "Observed"}</td>
+        </tr>
+      </table>
+
+      <div style="margin-bottom: 18px;">
+        <h3 style="font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: #92400e; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; margin-bottom: 8px;">
+          Executive Summary &amp; Historical Context
+        </h3>
+        <p style="font-size: 12px; line-height: 1.6; color: #334155;">${doc.summary}</p>
+      </div>
+
+      <div style="display: flex; gap: 20px; margin-bottom: 18px;">
+        <div style="flex: 1;">
+          <h3 style="font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: #92400e; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; margin-bottom: 8px;">
+            Meeting Agenda
+          </h3>
+          <ul style="font-size: 11px; padding-left: 18px; margin: 0; line-height: 1.5; color: #334155;">
+            ${agendaHTML}
+          </ul>
+        </div>
+        <div style="flex: 1;">
+          <h3 style="font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: #92400e; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; margin-bottom: 8px;">
+            Key Discussions &amp; Deliberations
+          </h3>
+          <ul style="font-size: 11px; padding-left: 18px; margin: 0; line-height: 1.5; color: #334155;">
+            ${discHTML}
+          </ul>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 20px; background-color: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 8px; padding: 12px 16px;">
+        <h3 style="font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: #065f46; margin: 0 0 8px 0;">
+          Official Approved Resolutions &amp; Directives
+        </h3>
+        <ul style="font-size: 11px; padding-left: 18px; margin: 0; line-height: 1.5;">
+          ${resHTML}
+        </ul>
+      </div>
+
+      <div style="margin-bottom: 20px;">
+        <h3 style="font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: #92400e; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; margin-bottom: 8px;">
+          Registered Attendees &amp; Family Representatives (${attendees.length})
+        </h3>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;">
+          ${attendeesHTML}
+        </div>
+      </div>
+
+      <div style="margin-top: 30px; border-top: 1px solid #e2e8f0; padding-top: 14px; text-align: center; font-size: 10px; color: #94a3b8;">
+        Official Clan Minutes Record &bull; Certified by Kintu Family Council Secretariat &bull; Exported on ${exportDate}
+      </div>
+    </body>
+    </html>
+  `;
+
+  printWindow.document.open();
+  printWindow.document.write(docHTML);
+  printWindow.document.close();
 }
 
 /* -------------------------------------------------------
@@ -1001,15 +1328,47 @@ function downloadFamilyPDF() {
 
   let minutesHTML = "";
   minutes.forEach((doc) => {
+    const attendees = doc.attendees || [];
+    const agendaList = (doc.agenda && doc.agenda.length) 
+      ? doc.agenda.map((a, i) => `<li style="margin-bottom: 4px;"><strong>${i+1}.</strong> ${a}</li>`).join("")
+      : "<li>Clan lineage preservation & agenda.</li>";
+    const resList = (doc.resolutions && doc.resolutions.length)
+      ? doc.resolutions.map(r => `<li style="margin-bottom: 4px; color: #065f46; font-weight: 600;">&bull; ${r}</li>`).join("")
+      : "<li>Resolutions endorsed by family council.</li>";
+    const attendeesSample = attendees.slice(0, 30).map((a, i) => {
+      const text = typeof a === "string" ? a : `${a.name}${a.phone ? ` (${a.phone})` : ""}`;
+      return `<span style="display: inline-block; margin: 2px 4px; padding: 2px 6px; background-color: #f1f5f9; border-radius: 4px; font-size: 9px;">${i+1}. ${text}</span>`;
+    }).join("");
+    const moreAttendees = attendees.length > 30 ? `<span style="font-size: 9px; color: #64748b; font-style: italic;">...and ${attendees.length - 30} more registered attendees.</span>` : "";
+
     minutesHTML += `
-      <div style="margin-bottom: 16px; padding: 12px; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; page-break-inside: avoid;">
-        <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px;">
+      <div style="margin-bottom: 24px; padding: 16px; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; page-break-inside: avoid;">
+        <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 6px;">
           <strong style="color: #92400e; text-transform: uppercase;">${doc.category}</strong>
           <span style="color: #64748b;">${doc.date} &bull; ${doc.status}</span>
         </div>
-        <h4 style="font-size: 13px; font-weight: bold; color: #0f172a; margin: 4px 0;">${doc.title}</h4>
-        <p style="font-size: 11px; color: #475569; margin: 2px 0 6px 0;">Recorded by: <strong>${doc.recordedBy}</strong></p>
-        <p style="font-size: 11px; color: #334155; line-height: 1.4; margin: 0;">${doc.summary}</p>
+        <h3 style="font-family: 'Playfair Display', Georgia, serif; font-size: 15px; font-weight: bold; color: #0f172a; margin: 4px 0 6px 0;">${doc.title}</h3>
+        <p style="font-size: 11px; color: #475569; margin: 2px 0 8px 0;">
+          <strong>Venue:</strong> ${doc.venue || "Bunyoro-Kitara"} &bull; 
+          <strong>Chairperson:</strong> ${doc.chairperson || "Council of Elders"} &bull; 
+          <strong>Recorded by:</strong> ${doc.recordedBy}
+        </p>
+        <p style="font-size: 11px; color: #334155; line-height: 1.5; margin: 0 0 10px 0;">${doc.summary}</p>
+        
+        <div style="margin-bottom: 10px;">
+          <strong style="font-size: 10px; text-transform: uppercase; color: #92400e; display: block; margin-bottom: 4px;">Key Agenda &amp; Deliberations:</strong>
+          <ul style="font-size: 10px; margin: 0; padding-left: 16px; color: #334155;">${agendaList}</ul>
+        </div>
+
+        <div style="margin-bottom: 10px; background-color: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 6px; padding: 8px 12px;">
+          <strong style="font-size: 10px; text-transform: uppercase; color: #065f46; display: block; margin-bottom: 4px;">Approved Resolutions &amp; Directives:</strong>
+          <ul style="font-size: 10px; margin: 0; padding-left: 16px;">${resList}</ul>
+        </div>
+
+        <div>
+          <strong style="font-size: 10px; text-transform: uppercase; color: #64748b; display: block; margin-bottom: 4px;">Registered Attendees (${attendees.length}):</strong>
+          <div>${attendeesSample} ${moreAttendees}</div>
+        </div>
       </div>
     `;
   });
@@ -1428,7 +1787,21 @@ async function syncFromDB(isBackground = false) {
     if (dbMembers !== null) {
       const memberMap = new Map();
       (KINTU_INITIAL_DATA.members || []).forEach((m) => memberMap.set(m.id, { ...m }));
-      dbMembers.forEach((m) => memberMap.set(m.id, { ...m }));
+      dbMembers.forEach((m) => {
+        if (memberMap.has(m.id)) {
+          const initM = memberMap.get(m.id);
+          const mergedChildren = Array.from(new Set([...(initM.childrenIds || []), ...(m.childrenIds || [])]));
+          const mergedParents = Array.from(new Set([...(initM.parentIds || []), ...(m.parentIds || [])]));
+          memberMap.set(m.id, {
+            ...initM,
+            ...m,
+            childrenIds: mergedChildren,
+            parentIds: mergedParents,
+          });
+        } else {
+          memberMap.set(m.id, { ...m });
+        }
+      });
       const merged = Array.from(memberMap.values());
 
       if (merged.length !== appData.members.length || JSON.stringify(merged) !== JSON.stringify(appData.members)) {
